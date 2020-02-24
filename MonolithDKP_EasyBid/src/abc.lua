@@ -27,6 +27,18 @@ EasyBid.var = {
 --    nextMinimum = nil,
 }
 
+local classes = {
+    WARRIOR={r=0.78,g=0.61,b=0.43},
+    ROGUE={r=1,g=0.96,b=0.41},
+    MAGE={r=0.25,g=0.78,b=0.92},
+    PRIEST={r=1,g=1,b=1},
+    WARLOCK={r=0.53,g=0.53,b=0.93},
+    HUNTER={r=0.67,g=0.83,b=0.45},
+    SHAMAN={r=0,g=0.44,b=0.87},
+    DRUID={r=1,g=0.49,b=0.04},
+    PALADIN={r=0.96,g=0.55,b=0.73},
+}
+
 function EasyBid:OnInitialize()
     if not MonDKP_DKPTable then MonDKP_DKPTable = {} end;
 
@@ -108,6 +120,7 @@ function EasyBid:FillCurrentItem()
 
         EasyBid.var.gui.currentItem:SetText(itemLink)
         EasyBid.var.gui.currentItem:SetImage(itemIcon)
+        EasyBid.var.gui.currentItem:SetImageSize(25, 25)
         EasyBid.var.gui.currentItem:SetCallback("OnEnter", function(widget)
             if (tooltip ~= nil) then
                 tooltip:SetOwner(EasyBid.var.gui.currentItem.frame, "ANCHOR_NONE")
@@ -155,7 +168,7 @@ function EasyBid:FillBidders()
         if (EasyBid.var.maxBidder ~= nil and EasyBid.var.maxBidder.bid > 0 and EasyBid.var.maxBidder.player ~= nil) then
             highestBidderText = EasyBid.var.maxBidder.bid .. " - " .. EasyBid.var.maxBidder.player
         else
-            highestBidderText = "NO BIDDER"
+            highestBidderText = "-- NO BIDDER --"
         end
         EasyBid.var.gui.highestBidder:SetText(highestBidderText)
     end
@@ -246,13 +259,13 @@ function EasyBid:StartGUI()
     frame:SetTitle("Monolith DKP Easy Bid")
     frame:SetWidth(500)
     frame:SetHeight(500)
-    frame:SetPoint("TOPLEFT", "UIParent", "TOPLEFT", 100, -100);
     frame:SetLayout("Flow");
+    frame:SetCallback("OnClose", function(widget) AceGUI:Release(widget); EasyBid.var.gui.isVisible = false end)
 
     local scrollcontainer = AceGUI:Create("InlineGroup")
     scrollcontainer:SetTitle("bid history")
-    scrollcontainer:SetWidth(150)
-    scrollcontainer:SetHeight(100) -- probably?
+    scrollcontainer:SetRelativeWidth(0.3)
+    scrollcontainer:SetHeight(350)
     scrollcontainer:SetLayout("Fill") -- important!
 
     local scroll = AceGUI:Create("ScrollFrame")
@@ -265,22 +278,27 @@ function EasyBid:StartGUI()
     EasyBid.var.myMax = max
 
     local currentItem = AceGUI:Create("InteractiveLabel")
-    currentItem:SetWidth(350)
-    currentItem:SetHeight(50)
+    currentItem:SetWidth(300)
+    local Path, Size, Flags = currentItem.label:GetFont()
+    currentItem.label:SetFont(Path, 20, Flags);
 
     local highestBidder = AceGUI:Create("Label")
-    highestBidder:SetWidth(350)
-    highestBidder:SetHeight(50)
+    highestBidder:SetWidth(300)
+    local Path, Size, Flags = highestBidder.label:GetFont()
+    highestBidder.label:SetFont(Path, 30, Flags);
 
     local editbox = AceGUI:Create("EditBox")
     editbox:SetText(tostring(EasyBid.var.minimumBid))
-    editbox:SetLabel("Insert text:")
-    editbox:SetWidth(200)
+--    editbox:SetLabel("Insert text:")
+    editbox:SetWidth(75)
+    local Path, Size, Flags = editbox.editbox:GetFont()
+    editbox.editbox:SetFont(Path, 20, Flags);
+--    editbox.label:Release()
     editbox:SetCallback("OnEnterPressed", function(widget, event, text) EasyBid:setMyBid(text, nil) end)
 
     local btnBid = AceGUI:Create("Button")
-    btnBid:SetText("submit")
-    btnBid:SetWidth(265)
+    btnBid:SetText("BID")
+    btnBid:SetWidth(120)
     btnBid:SetHeight(50)
     btnBid:SetCallback("OnClick", function()
         if (EasyBid.var.bidOfficer ~= nil) then
@@ -350,23 +368,46 @@ function EasyBid:StartGUI()
     btnSetMaximum:SetHeight(30)
     btnSetMaximum:SetCallback("OnClick", function() EasyBid:setMyBid(max, nil) end)
 
-    frame:AddChild(scrollcontainer)
-    frame:AddChild(currentItem)
-    frame:AddChild(highestBidder)
-    frame:AddChild(editbox)
-    frame:AddChild(btnBid)
-    frame:AddChild(btnAdd10)
-    frame:AddChild(btnAdd50)
-    frame:AddChild(btnAdd100)
-    frame:AddChild(btnMinus10)
-    frame:AddChild(btnMinus50)
-    frame:AddChild(btnMinus100)
-    frame:AddChild(minBidSlider)
-    frame:AddChild(minBidSlider)
-    frame:AddChild(btnSetMinimum)
-    frame:AddChild(btnSetHalf)
-    frame:AddChild(btnSetMaximum)
+    local groupBid = AceGUI:Create("SimpleGroup")
+    groupBid:SetRelativeWidth(1)
+    groupBid:SetLayout("Flow")
 
+    groupBid:AddChild(editbox)
+    groupBid:AddChild(btnBid)
+
+    local groupModify = AceGUI:Create("SimpleGroup")
+    groupModify:SetRelativeWidth(1)
+    groupModify:SetLayout("Flow")
+
+    groupModify:AddChild(btnAdd10)
+    groupModify:AddChild(btnAdd50)
+    groupModify:AddChild(btnAdd100)
+    groupModify:AddChild(btnMinus10)
+    groupModify:AddChild(btnMinus50)
+    groupModify:AddChild(btnMinus100)
+
+    local groupSet = AceGUI:Create("SimpleGroup")
+    groupSet:SetRelativeWidth(1)
+    groupSet:SetLayout("Flow")
+
+    groupSet:AddChild(btnSetMinimum)
+    groupSet:AddChild(btnSetHalf)
+    groupSet:AddChild(btnSetMaximum)
+
+    local group = AceGUI:Create("SimpleGroup")
+    group:SetRelativeWidth(0.6)
+    group:SetHeight(350)
+    group:SetLayout("List")
+
+    frame:AddChild(scrollcontainer)
+    frame:AddChild(group)
+
+    group:AddChild(currentItem)
+    group:AddChild(highestBidder)
+    group:AddChild(groupBid)
+    group:AddChild(groupModify)
+    group:AddChild(minBidSlider)
+    group:AddChild(groupSet)
 
     EasyBid.var.gui.frame = frame
     EasyBid.var.gui.editBox = editbox
@@ -377,6 +418,14 @@ function EasyBid:StartGUI()
 
     EasyBid:FillCurrentItem();
     EasyBid:FillBidders();
+
+    frame:SetPoint("TOPLEFT", "UIParent", "TOPLEFT", 100, -100);
+
+    scrollcontainer:ClearAllPoints()
+    scrollcontainer:SetPoint("TOPRIGHT", frame.frame, "TOPRIGHT", -20, -30)
+
+    group:ClearAllPoints()
+    group:SetPoint("TOPLEFT", frame.frame, "TOPLEFT", 20, -30)
 
     EasyBid.var.gui.frame:Show();
 
