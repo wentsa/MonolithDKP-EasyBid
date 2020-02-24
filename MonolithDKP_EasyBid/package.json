@@ -1,0 +1,9 @@
+{
+  "name": "MonolithDKP_EasyBid",
+  "version": "1.0.0",
+  "dependencies": {},
+  "devDependencies": {
+    "copy-dir": "^1.2.0",
+    "rimraf": "^3.0.2"
+  }
+}
