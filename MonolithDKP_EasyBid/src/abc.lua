@@ -4,15 +4,6 @@ local LibAceSerializer = LibStub:GetLibrary("AceSerializer-3.0")
 local LibDeflate = LibStub:GetLibrary("LibDeflate")
 
 EasyBid.var = {
-    bidStartMessage = "Taking bids on",
-    bidEndMessage = "Bidding Closed!",
-    bidMessage = '!bid ',
-    bidCurrentItem = nil,
-    bidStart = 1,
-    bidResetDelay = 20,
-    bidMinimumIncrease = 2,
-    bidItems = {},
-
     gui = {
         frame = nil,
         editBox = nil,
@@ -27,7 +18,7 @@ EasyBid.var = {
 --    myBid = nil,
     bidOfficer = "Karthay",
 --    bidOfficer = nil,
-    currentItem = "Azuresong Mageblade",
+    currentItem = "16908",
 --    currentItem = nil,
     bidders = {},
     maxBidder = nil,
@@ -113,8 +104,24 @@ function EasyBid:FillCurrentItem()
     local _,itemLink,itemRarity,_,_,_,_,_,_,itemIcon = GetItemInfo(EasyBid.var.currentItem)
 
     if (EasyBid.var.gui.currentItem ~= nil) then
+        local tooltip = AceGUI.tooltip;
+
         EasyBid.var.gui.currentItem:SetText(itemLink)
         EasyBid.var.gui.currentItem:SetImage(itemIcon)
+        EasyBid.var.gui.currentItem:SetCallback("OnEnter", function(widget)
+            if (tooltip ~= nil) then
+                tooltip:SetOwner(EasyBid.var.gui.currentItem.frame, "ANCHOR_NONE")
+                tooltip:ClearAllPoints()
+                tooltip:SetPoint("LEFT", EasyBid.var.gui.currentItem.frame, "RIGHT")
+                tooltip:SetHyperlink(itemLink);
+                tooltip:Show();
+            end
+        end);
+        EasyBid.var.gui.currentItem:SetCallback("OnLeave", function()
+            if (tooltip ~= nil) then
+                tooltip:Hide()
+            end
+        end);
     end
 end
 
@@ -256,7 +263,7 @@ function EasyBid:StartGUI()
     local max = MonDKP_DKPTable[search[1][1]].dkp
     EasyBid.var.myMax = max
 
-    local currentItem = AceGUI:Create("Label")
+    local currentItem = AceGUI:Create("InteractiveLabel")
     currentItem:SetWidth(350)
     currentItem:SetHeight(50)
 
