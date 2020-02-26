@@ -1,4 +1,4 @@
-EasyBid = LibStub("AceAddon-3.0"):NewAddon("EasyBid", "AceConsole-3.0", "AceEvent-3.0", "AceComm-3.0")
+EasyBid = LibStub("AceAddon-3.0"):NewAddon("EasyBid", "AceConsole-3.0", "AceEvent-3.0", "AceComm-3.0", "AceHook-3.0")
 AceGUI = LibStub("AceGUI-3.0")
 local AceConfig = LibStub("AceConfig-3.0")
 local AceConfigDialog = LibStub("AceConfigDialog-3.0")
@@ -150,6 +150,7 @@ function EasyBid:OnInitialize()
         armor = {},
         weapons = {},
         initialized = false,
+        position = nil,
     } end;
 
     local myName = UnitName("player")
@@ -338,14 +339,17 @@ function EasyBid:FillCurrentItemAndPossiblyShow()
 
         if(itemClassId ~= nil and itemSubClassId ~= nil) then
             local shouldShow = true
+            local itemSubTypeName = nil
             if (itemClassId == armorItemType) then
+                itemSubTypeName = armorTypes[itemSubClassId]
                 shouldShow = not EasyBidSettings.armor[itemSubClassId]
             elseif(itemClassId == weaponItemType) then
+                itemSubTypeName = weaponTypes[itemSubClassId]
                 shouldShow = not EasyBidSettings.weapons[itemSubClassId]
             end
 
             if (not shouldShow) then
-                EasyBid:Print("Bidding frame not shown due to settings")
+                EasyBid:Print("Bidding frame not shown due to settings (" .. itemSubTypeName .. ")")
             end
 
             return shouldShow
@@ -506,10 +510,23 @@ function EasyBid:StartGUI()
     frame:SetCallback("OnClose",
         function(widget)
             AceGUI:Release(widget);
+            EasyBid:Unhook(frame.frame, "OnHide")
             EasyBid.var.gui.isVisible = false
         end
     )
     frame:EnableResize(false);
+    EasyBid:RawHookScript(frame.frame, "OnHide",
+        function(f)
+            local point, relativeTo, relativePoint, x, y = frame:GetPoint()
+            EasyBidSettings.position = {
+                point = point,
+                relativePoint = relativePoint,
+                x = x,
+                y = y,
+            };
+            self.hooks[f].OnHide(f)
+        end
+    )
 
     local scrollcontainer = AceGUI:Create("InlineGroup")
     scrollcontainer:SetTitle("History")
@@ -678,7 +695,17 @@ function EasyBid:StartGUI()
     EasyBid:FillBidders();
     local shouldShow = EasyBid:FillCurrentItemAndPossiblyShow();
 
-    frame:SetPoint("TOPLEFT", "UIParent", "TOPLEFT", 100, -100);
+    if (EasyBidSettings.position ~= nil) then
+        frame:SetPoint(
+            EasyBidSettings.position.point,
+            "UIParent",
+            EasyBidSettings.position.relativePoint,
+            EasyBidSettings.position.x,
+            EasyBidSettings.position.y
+        );
+    else
+        frame:SetPoint("RIGHT", "UIParent", "RIGHT", 0, 0);
+    end
 
     scrollcontainer:ClearAllPoints()
     scrollcontainer:SetPoint("TOPRIGHT", frame.frame, "TOPRIGHT", -20, -30)
