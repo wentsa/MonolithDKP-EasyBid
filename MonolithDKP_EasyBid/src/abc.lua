@@ -140,6 +140,18 @@ EasyBid.Options = {
             desc = "Set weapon types for which the bidding window will be opened automatically",
             get = function(info) return not EasyBidSettings.weapons[info.arg] end,
             set = function(info, value) EasyBidSettings.weapons[info.arg] = not value end,
+        },
+        resetPosition = {
+            type = "execute",
+            name = "Reset position",
+            desc = "Resets bidding frame position to default",
+            func = function()
+                EasyBidSettings.position = nil
+                if (EasyBid.var.gui.isVisible) then
+                    EasyBid:PositionFrame()
+                end
+                EasyBid:Print("Bidding window position reset succesful.")
+            end
         }
     }
 }
@@ -501,6 +513,24 @@ function EasyBid:SetNextMinimum()
     end
 end
 
+function EasyBid:PositionFrame()
+    if (EasyBid.var.gui.frame ~= nil) then
+        EasyBid.var.gui.frame:ClearAllPoints()
+
+        if (EasyBidSettings.position ~= nil) then
+            EasyBid.var.gui.frame:SetPoint(
+                EasyBidSettings.position.point,
+                "UIParent",
+                EasyBidSettings.position.relativePoint,
+                EasyBidSettings.position.x,
+                EasyBidSettings.position.y
+            );
+        else
+            EasyBid.var.gui.frame:SetPoint("RIGHT", "UIParent", "RIGHT", 0, 0);
+        end
+    end
+end
+
 function EasyBid:StartGUI()
     local frame = AceGUI:Create("Frame")
     frame:SetTitle("Monolith DKP Easy Bid")
@@ -695,17 +725,7 @@ function EasyBid:StartGUI()
     EasyBid:FillBidders();
     local shouldShow = EasyBid:FillCurrentItemAndPossiblyShow();
 
-    if (EasyBidSettings.position ~= nil) then
-        frame:SetPoint(
-            EasyBidSettings.position.point,
-            "UIParent",
-            EasyBidSettings.position.relativePoint,
-            EasyBidSettings.position.x,
-            EasyBidSettings.position.y
-        );
-    else
-        frame:SetPoint("RIGHT", "UIParent", "RIGHT", 0, 0);
-    end
+    EasyBid:PositionFrame()
 
     scrollcontainer:ClearAllPoints()
     scrollcontainer:SetPoint("TOPRIGHT", frame.frame, "TOPRIGHT", -20, -30)
