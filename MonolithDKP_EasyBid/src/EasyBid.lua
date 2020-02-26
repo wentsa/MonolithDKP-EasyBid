@@ -16,19 +16,19 @@ EasyBid.var = {
         highestBid = nil,
         isVisible = false,
     },
-    minimumBid = 10,
---    minimumBid = nil,
-    myBid = 10,
---    myBid = nil,
-    bidOfficer = "Karthay",
---    bidOfficer = nil,
-    currentItem = "16908",
---    currentItem = nil,
+--    minimumBid = 10,
+    minimumBid = nil,
+--    myBid = 10,
+    myBid = nil,
+--    bidOfficer = "Karthay",
+    bidOfficer = nil,
+--    currentItem = "16908",
+    currentItem = nil,
     bidders = {},
     maxBidder = nil,
     maxBidValue = nil,
-    nextMinimum = 10,
---    nextMinimum = nil,
+--    nextMinimum = 10,
+    nextMinimum = nil,
 }
 
 local weaponItemType = 2;
@@ -379,6 +379,20 @@ function EasyBid:FillBidders()
     if (EasyBid.var.gui.scroll ~= nil) then
         EasyBid.var.gui.scroll:ReleaseChildren();
     end
+
+--    EasyBid.var.bidders = {
+--        {bid=170, player="Killufast"},
+--        {bid=160, player="Zeusovaneter"},
+--        {bid=70, player="Uada"},
+--        {bid=60, player="Moominka"},
+--        {bid=60, player="Gorben"},
+--        {bid=50, player="Caspi"},
+--        {bid=40, player="Zheith"},
+--        {bid=20, player="Dahed"},
+--    }
+--
+--    EasyBid.var.maxBidder = { bid=170, player="Killufast"}
+--    EasyBid.var.maxBidValue = 170
 
     for index, value in ipairs(EasyBid.var.bidders) do
         if (EasyBid.var.gui.scroll ~= nil) then
