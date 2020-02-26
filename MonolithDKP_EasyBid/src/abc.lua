@@ -125,7 +125,7 @@ local classes = {
 
 EasyBid.Options = {
     type = "group",
-    name = "Monolith DKP Easy Bid",
+    name = "MonDKP Easy Bid",
     args = {
         armor = {
             type = "group",
@@ -557,6 +557,7 @@ function EasyBid:StartGUI()
             self.hooks[f].OnHide(f)
         end
     )
+    frame.frame:SetFrameStrata("MEDIUM")
 
     local scrollcontainer = AceGUI:Create("InlineGroup")
     scrollcontainer:SetTitle("History")
