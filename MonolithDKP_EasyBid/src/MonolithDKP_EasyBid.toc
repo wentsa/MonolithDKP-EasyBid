@@ -2,7 +2,7 @@
 ## Title: Monolith DKP EasyBid
 ## Notes: Frame for easy bidding with Monolith DKP
 ## Version: 0.1
-## SavedVariables: MonDKP_DKPTable
+## SavedVariables: MonDKP_DKPTable, EasyBidSettings
 
 embed.xml
 

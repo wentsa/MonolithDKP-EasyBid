@@ -1,5 +1,8 @@
 EasyBid = LibStub("AceAddon-3.0"):NewAddon("EasyBid", "AceConsole-3.0", "AceEvent-3.0", "AceComm-3.0")
 AceGUI = LibStub("AceGUI-3.0")
+local AceConfig = LibStub("AceConfig-3.0")
+local AceConfigDialog = LibStub("AceConfigDialog-3.0")
+
 local LibAceSerializer = LibStub:GetLibrary("AceSerializer-3.0")
 local LibDeflate = LibStub:GetLibrary("LibDeflate")
 
@@ -28,20 +31,154 @@ EasyBid.var = {
 --    nextMinimum = nil,
 }
 
+local weaponItemType = 2;
+local weaponTypes = {
+    [0] = "One-Handed Axes",
+    [1] = "Two-Handed Axes",
+    [2] = "Bows",
+    [3] = "Guns",
+    [4] = "One-Handed Maces",
+    [5] = "Two-Handed Maces",
+    [6] = "Polearms",
+    [7] = "One-Handed Swords",
+    [8] = "Two-Handed Swords",
+--    [9] = "Warglaives",
+    [10] = "Staves",
+--    [11] = "Bear Claws",
+--    [12] = "CatClaws",
+    [13] = "Fist Weapons",
+    [14] = "Miscellaneous",
+    [15] = "Daggers",
+    [16] = "Thrown",
+--    [17] = "Spears",
+    [18] = "Crossbows",
+    [19] = "Wands",
+    [20] = "Fishing Poles",
+}
+
+local armorItemType = 4;
+local armorTypes = {
+    [-8] = "Shirts",
+    [-6] = "Cloaks",
+    [-5] = "Off-hand",
+    [-3] = "Amulet",
+    [0] = "Miscellaneous",
+    [1] = "Cloth",
+    [2] = "Leather",
+    [3] = "Mail",
+    [4] = "Plate",
+--    [5] = "Cosmetic",
+    [6] = "Shields",
+    [7] = "Librams", -- paladin
+    [8] = "Idols", -- druid
+    [9] = "Totems", -- shaman
+--    [10] = "Sigils", -- DK
+    [11] = "Relic", -- druid, pala, shamy
+}
 local classes = {
-    WARRIOR={r=0.78,g=0.61,b=0.43},
-    ROGUE={r=1,g=0.96,b=0.41},
-    MAGE={r=0.25,g=0.78,b=0.92},
-    PRIEST={r=1,g=1,b=1},
-    WARLOCK={r=0.53,g=0.53,b=0.93},
-    HUNTER={r=0.67,g=0.83,b=0.45},
-    SHAMAN={r=0,g=0.44,b=0.87},
-    DRUID={r=1,g=0.49,b=0.04},
-    PALADIN={r=0.96,g=0.55,b=0.73},
+    WARRIOR={
+        weapons= {0,1,2,3,4,5,6,7,8,10,13,14,15,16,18,20},
+        armor={-8,-6,-5,-3,0,1,2,3,4,6 },
+        color={r=0.78,g=0.61,b=0.43},
+    },
+    ROGUE={
+        weapons= {2,3,4,7,13,14,15,16,18,20},
+        armor={-8,-6,-5,-3,0,1,2 },
+        color={r=1,g=0.96,b=0.41},
+    },
+    MAGE={
+        weapons= {7,10,14,15,19,20},
+        armor={-8,-6,-5,-3,0,1 },
+        color={r=0.25,g=0.78,b=0.92},
+    },
+    PRIEST={
+        weapons= {4,10,14,15,19,20},
+        armor={-8,-6,-5,-3,0,1 },
+        color={r=1,g=1,b=1},
+    },
+    WARLOCK={
+        weapons= {7,10,14,15,19,20},
+        armor={-8,-6,-5,-3,0,1},
+        color={r=0.53,g=0.53,b=0.93},
+    },
+    HUNTER={
+        weapons= {0,1,2,3,6,7,8,10,13,14,15,16,18,20},
+        armor={-8,-6,-5,-3,0,1,2,3 },
+        color={r=0.67,g=0.83,b=0.45},
+    },
+    SHAMAN={
+        weapons= {0,1,4,5,10,13,14,15,20},
+        armor={-8,-6,-5,-3,0,1,2,3,6,9,11},
+        color={r=0,g=0.44,b=0.87},
+    },
+    DRUID={
+        weapons= {4,5,10,13,14,15,20},
+        armor={-8,-6,-5,-3,0,1,2,8,11},
+        color={r=1,g=0.49,b=0.04},
+    },
+    PALADIN={
+        weapons= {0,1,4,5,6,7,8,14,20},
+        armor={-8,-6,-5,-3,0,1,2,3,4,6,7,11},
+        color={r=0.96,g=0.55,b=0.73},
+    },
+}
+
+EasyBid.Options = {
+    type = "group",
+    name = "Monolith DKP Easy Bid",
+    args = {
+        armor = {
+            type = "group",
+            name = "Armor",
+            desc = "Set armor types for which the bidding window will be opened automatically",
+            get = function(info) return not EasyBidSettings.armor[info.arg] end,
+            set = function(info, value) EasyBidSettings.armor[info.arg] = not value end,
+        },
+        weapons = {
+            type = "group",
+            name = "Weapons",
+            desc = "Set weapon types for which the bidding window will be opened automatically",
+            get = function(info) return not EasyBidSettings.weapons[info.arg] end,
+            set = function(info, value) EasyBidSettings.weapons[info.arg] = not value end,
+        }
+    }
 }
 
 function EasyBid:OnInitialize()
     if not MonDKP_DKPTable then MonDKP_DKPTable = {} end;
+    if not EasyBidSettings then EasyBidSettings = {
+        armor = {},
+        weapons = {},
+        initialized = false,
+    } end;
+
+    local myName = UnitName("player")
+    local cls = EasyBid:GetClass(myName)
+
+    -- Fill options table armor
+    local armor = {}
+    for index, value in pairs(armorTypes) do
+        armor[tostring(index)] = { type = "toggle", name = value, arg = index }
+        if (not EasyBidSettings.initialized) then
+            EasyBidSettings.armor[index] = not EasyBid:CanEquip(cls, armorItemType, index)
+        end
+    end
+    EasyBid.Options.args.armor.args = armor;
+
+    -- Fill options weapon
+    local weapons = {}
+    for index, value in pairs(weaponTypes) do
+        weapons[tostring(index)] = { type = "toggle", name = value, arg = index }
+        if (not EasyBidSettings.initialized) then
+            EasyBidSettings.weapons[index] = not EasyBid:CanEquip(cls, weaponItemType, index)
+        end
+    end
+    EasyBid.Options.args.weapons.args = weapons;
+
+    AceConfig:RegisterOptionsTable("EasyBid", EasyBid.Options)
+    AceConfigDialog:AddToBlizOptions("EasyBid", "Monolith DKP Easy Bid")
+
+    EasyBidSettings.initialized = true
 
     EasyBid:Print("EASY BID INITIALIZED")
 end
@@ -99,7 +236,6 @@ function EasyBid:ShowBiddingFrame()
     if (not EasyBid.var.gui.isVisible) then
         if (EasyBid.var.currentItem ~= nil) then
             EasyBid:StartGUI()
-            EasyBid.var.gui.isVisible = true
         else
             EasyBid:Print("No bidding in progress")
         end
@@ -109,11 +245,10 @@ end
 function EasyBid:HideBiddingFrame()
     if (EasyBid.var.gui.isVisible) then
         EasyBid:StopGUI()
-        EasyBid.var.gui.isVisible = false
     end
 end
 
-function EasyBid:GetClassColor(player)
+function EasyBid:GetClass(player)
     local cls = nil;
     local search = EasyBid:Table_Search(MonDKP_DKPTable, player)
     if (search ~= nil) then
@@ -125,8 +260,14 @@ function EasyBid:GetClassColor(player)
         cls = classFilename
     end
 
+    return cls;
+end
+
+function EasyBid:GetClassColor(player)
+    local cls = EasyBid:GetClass(player);
+
     if (cls ~= nil and classes[cls] ~= nil) then
-        return classes[cls].r, classes[cls].g, classes[cls].b
+        return classes[cls].color.r, classes[cls].color.g, classes[cls].color.b
     end
 
     return 1, 1, 1
@@ -147,8 +288,31 @@ function EasyBid:GetPlayerDkp(player)
     return 9999
 end
 
-function EasyBid:FillCurrentItem()
-    local _,itemLink,itemRarity,_,_,_,_,_,_,itemIcon = GetItemInfo(EasyBid.var.currentItem)
+function EasyBid:CanEquip(cls, itemType, itemSubtype)
+    if (cls ~= nil and classes[cls] ~= nil) then
+        local classTypeArr;
+        if (itemType == armorItemType) then
+            classTypeArr = classes[cls].armor
+        elseif(itemType == weaponItemType) then
+            classTypeArr = classes[cls].weapons
+        else
+            return true
+        end
+
+        for _,v in pairs(classTypeArr) do
+            if v == itemSubtype then
+                return true
+            end
+        end
+
+        return false
+    else
+        return true
+    end
+end
+
+function EasyBid:FillCurrentItemAndPossiblyShow()
+    local _,itemLink,itemRarity,_,_,_,_,_,_,itemIcon,_,itemClassId,itemSubClassId = GetItemInfo(EasyBid.var.currentItem)
 
     if (EasyBid.var.gui.currentItem ~= nil) then
         local tooltip = AceGUI.tooltip;
@@ -171,7 +335,24 @@ function EasyBid:FillCurrentItem()
                 tooltip:Hide()
             end
         end);
+
+        if(itemClassId ~= nil and itemSubClassId ~= nil) then
+            local shouldShow = true
+            if (itemClassId == armorItemType) then
+                shouldShow = not EasyBidSettings.armor[itemSubClassId]
+            elseif(itemClassId == weaponItemType) then
+                shouldShow = not EasyBidSettings.weapons[itemSubClassId]
+            end
+
+            if (not shouldShow) then
+                EasyBid:Print("Bidding frame not shown due to settings")
+            end
+
+            return shouldShow
+        end
     end
+
+    return false
 end
 
 
@@ -241,7 +422,7 @@ end
 
 function EasyBid:OnItemInfoReceived(self, itemId, success)
     if (success == true and EasyBid.var.currentItem == tostring(itemId)) then
-        EasyBid:FillCurrentItem();
+        EasyBid:ShowBiddingFrame();
     end
 end
 
@@ -322,7 +503,12 @@ function EasyBid:StartGUI()
     frame:SetWidth(600)
     frame:SetHeight(360)
     frame:SetLayout("Flow");
-    frame:SetCallback("OnClose", function(widget) AceGUI:Release(widget); EasyBid.var.gui.isVisible = false end)
+    frame:SetCallback("OnClose",
+        function(widget)
+            AceGUI:Release(widget);
+            EasyBid.var.gui.isVisible = false
+        end
+    )
     frame:EnableResize(false);
 
     local scrollcontainer = AceGUI:Create("InlineGroup")
@@ -489,8 +675,8 @@ function EasyBid:StartGUI()
     EasyBid.var.gui.highestBidder = highestBidder;
     EasyBid.var.gui.highestBid = highestBid;
 
-    EasyBid:FillCurrentItem();
     EasyBid:FillBidders();
+    local shouldShow = EasyBid:FillCurrentItemAndPossiblyShow();
 
     frame:SetPoint("TOPLEFT", "UIParent", "TOPLEFT", 100, -100);
 
@@ -499,6 +685,9 @@ function EasyBid:StartGUI()
 
     group:ClearAllPoints()
     group:SetPoint("TOPLEFT", frame.frame, "TOPLEFT", 20, -30)
+
+    currentItem:ClearAllPoints()
+    currentItem:SetPoint("TOPLEFT", group.frame, "TOPLEFT", 0, 0);
 
     groupBidder:ClearAllPoints()
     groupBidder:SetPoint("TOPLEFT", currentItem.frame, "BOTTOMLEFT", 0, -5);
@@ -512,13 +701,19 @@ function EasyBid:StartGUI()
     highestBidder:ClearAllPoints()
     highestBidder:SetPoint("LEFT", highestBid.frame, "RIGHT")
 
-    EasyBid.var.gui.frame:Show();
+    if (shouldShow) then
+        EasyBid.var.gui.frame:Show();
+        EasyBid.var.gui.isVisible = true
+    else
+        frame:Hide()
+    end
 
 end
 
 function EasyBid:StopGUI()
     if (EasyBid.var.gui.frame ~= nil) then
         EasyBid.var.gui.frame:Hide();
+        EasyBid.var.gui.isVisible = false
     end
 end
 
@@ -641,21 +836,7 @@ end
 
 --table.insert(Bids_Submitted, {player=name, dkp=dkp})
 function EasyBid:OnCommReceived(prefix, message, distribution, sender)
-    EasyBid:Print("COMM: " .. tostring(prefix) .. ", " .. tostring(message) .. ", " .. tostring(distribution) .. ", " .. tostring(sender))
-
     if prefix then
-        --        if prefix == "MonDKPBidder" then
-        --            if core.BidInProgress and core.IsOfficer then
-        --                if message == "pass" then
-        --                    MonDKP:Print(sender.." has passed.")
-        --                    return
-        --                else
-        --                    MonDKP_CHAT_MSG_WHISPER(message, sender)
-        --                    return
-        --                end
-        --            else
-        --                return
-        --        end
         if EasyBid:ValidateSender(sender) then    -- validates sender as an officer. fail-safe to prevent addon alterations to manipulate DKP table
             if (prefix == "MonDKPCommand") then
                 local command, arg1, arg2, arg3, arg4 = strsplit(",", message);
