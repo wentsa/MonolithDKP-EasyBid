@@ -125,7 +125,7 @@ local classes = {
 
 EasyBid.Options = {
     type = "group",
-    name = "MonDKP Easy Bid",
+    name = "Monolith DKP Easy Bid",
     args = {
         armor = {
             type = "group",
@@ -189,7 +189,7 @@ function EasyBid:OnInitialize()
     EasyBid.Options.args.weapons.args = weapons;
 
     AceConfig:RegisterOptionsTable("EasyBid", EasyBid.Options)
-    AceConfigDialog:AddToBlizOptions("EasyBid", "Monolith DKP Easy Bid")
+    AceConfigDialog:AddToBlizOptions("EasyBid", "MonDKP Easy Bid")
 
     EasyBidSettings.initialized = true
 

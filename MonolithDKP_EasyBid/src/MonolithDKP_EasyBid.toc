@@ -4,6 +4,6 @@
 ## Version: 0.1
 ## SavedVariables: MonDKP_DKPTable, EasyBidSettings
 
-embed.xml
+embeds.xml
 
-abc.lua
+EasyBid.lua
