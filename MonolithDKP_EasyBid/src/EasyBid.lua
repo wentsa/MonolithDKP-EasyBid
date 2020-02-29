@@ -158,7 +158,7 @@ EasyBid.Options = {
 }
 
 function EasyBid:OnInitialize()
-    if not MonDKP_DKPTable then MonDKP_DKPTable = {} end;
+    if not MonDKP_EasyBid_DKPTable then MonDKP_EasyBid_DKPTable = {} end;
     if not EasyBidSettings then EasyBidSettings = {
         armor = {},
         weapons = {},
@@ -265,9 +265,9 @@ end
 
 function EasyBid:GetClass(player)
     local cls = nil;
-    local search = EasyBid:Table_Search(MonDKP_DKPTable, player)
-    if (search ~= nil) then
-        cls = MonDKP_DKPTable[search[1][1]].class
+    local search = EasyBid:Table_Search(MonDKP_EasyBid_DKPTable, player)
+    if (search) then
+        cls = MonDKP_EasyBid_DKPTable[search[1][1]].class
     end
 
     if (cls == nil) then
@@ -295,9 +295,9 @@ function EasyBid:GetPlayerDkp(player)
     end
 
     if (name ~= nil) then
-        local search = EasyBid:Table_Search(MonDKP_DKPTable, name)
-        if (search ~= nil) then
-            return MonDKP_DKPTable[search[1][1]].dkp
+        local search = EasyBid:Table_Search(MonDKP_EasyBid_DKPTable, name)
+        if (search) then
+            return MonDKP_EasyBid_DKPTable[search[1][1]].dkp
         end
     end
     return MAXIMUM
@@ -878,11 +878,11 @@ function EasyBid:ValidateSender(sender)                -- returns true if "sende
 end
 
 -------------------------------------
--- Recursively searches tar (table) for val (string) as far as 4 nests deep (use field only if you wish to search a specific key IE: MonDKP_DKPTable, "Roeshambo", "player" would only search for Roeshambo in the player key)
+-- Recursively searches tar (table) for val (string) as far as 4 nests deep (use field only if you wish to search a specific key IE: MonDKP_EasyBid_DKPTable, "Roeshambo", "player" would only search for Roeshambo in the player key)
 -- returns an indexed array of the keys to get to searched value
 -- First key is the result (ie if it's found 8 times, it will return 8 tables containing results).
--- Second key holds the path to the value searched. So to get to a player searched on DKPTable that returned 1 result, MonDKP_DKPTable[search[1][1]][search[1][2]] would point at the "player" field
--- if the result is 1 level deeper, it would be MonDKP_DKPTable[search[1][1]][search[1][2]][search[1][3]].  MonDKP_DKPTable[search[2][1]][search[2][2]][search[2][3]] would locate the second return, if there is one.
+-- Second key holds the path to the value searched. So to get to a player searched on DKPTable that returned 1 result, MonDKP_EasyBid_DKPTable[search[1][1]][search[1][2]] would point at the "player" field
+-- if the result is 1 level deeper, it would be MonDKP_EasyBid_DKPTable[search[1][1]][search[1][2]][search[1][3]].  MonDKP_EasyBid_DKPTable[search[2][1]][search[2][2]][search[2][3]] would locate the second return, if there is one.
 -- use to search for players in SavedVariables. Only two possible returns is the table or false.
 -------------------------------------
 function EasyBid:Table_Search(tar, val, field)
@@ -1012,7 +1012,7 @@ function EasyBid:OnCommReceived(prefix, message, distribution, sender)
                                 return a["date"] > b["date"]
                             end)
 
-                            MonDKP_DKPTable = deserialized.DKPTable
+                            MonDKP_EasyBid_DKPTable = deserialized.DKPTable
                             return
                         elseif prefix == "MonDKPBidShare" then
                             local bidders = deserialized
@@ -1021,9 +1021,9 @@ function EasyBid:OnCommReceived(prefix, message, distribution, sender)
                             EasyBid:FillBidders()
                             return
                         elseif prefix == "MonDKPLootDist" then
-                            local search = EasyBid:Table_Search(MonDKP_DKPTable, deserialized.player, "player")
+                            local search = EasyBid:Table_Search(MonDKP_EasyBid_DKPTable, deserialized.player, "player")
                             if search then
-                                local DKPTable = MonDKP_DKPTable[search[1][1]]
+                                local DKPTable = MonDKP_EasyBid_DKPTable[search[1][1]]
                                 DKPTable.dkp = DKPTable.dkp + deserialized.cost
                                 DKPTable.lifetime_spent = DKPTable.lifetime_spent + deserialized.cost
                             end
@@ -1032,12 +1032,12 @@ function EasyBid:OnCommReceived(prefix, message, distribution, sender)
                             local dkp = deserialized.dkp
 
                             for i=1, #players do
-                                local search = EasyBid:Table_Search(MonDKP_DKPTable, players[i], "player")
+                                local search = EasyBid:Table_Search(MonDKP_EasyBid_DKPTable, players[i], "player")
 
                                 if search then
-                                    MonDKP_DKPTable[search[1][1]].dkp = MonDKP_DKPTable[search[1][1]].dkp + tonumber(dkp)
+                                    MonDKP_EasyBid_DKPTable[search[1][1]].dkp = MonDKP_EasyBid_DKPTable[search[1][1]].dkp + tonumber(dkp)
                                     if tonumber(dkp) > 0 then
-                                        MonDKP_DKPTable[search[1][1]].lifetime_gained = MonDKP_DKPTable[search[1][1]].lifetime_gained + tonumber(dkp)
+                                        MonDKP_EasyBid_DKPTable[search[1][1]].lifetime_gained = MonDKP_EasyBid_DKPTable[search[1][1]].lifetime_gained + tonumber(dkp)
                                     end
                                 end
                             end
@@ -1046,10 +1046,10 @@ function EasyBid:OnCommReceived(prefix, message, distribution, sender)
                             local dkp = {strsplit(",", deserialized.dkp)}
 
                             for i=1, #players do
-                                local search = EasyBid:Table_Search(MonDKP_DKPTable, players[i], "player")
+                                local search = EasyBid:Table_Search(MonDKP_EasyBid_DKPTable, players[i], "player")
 
                                 if search then
-                                    MonDKP_DKPTable[search[1][1]].dkp = MonDKP_DKPTable[search[1][1]].dkp + tonumber(dkp[i])
+                                    MonDKP_EasyBid_DKPTable[search[1][1]].dkp = MonDKP_EasyBid_DKPTable[search[1][1]].dkp + tonumber(dkp[i])
                                 end
                             end
                         elseif prefix == "MonDKPDelLoot" then
@@ -1059,11 +1059,11 @@ function EasyBid:OnCommReceived(prefix, message, distribution, sender)
                                 MonDKP_Loot[search[1][1]].deletedby = deserialized.index
                             end
 
-                            local search_player = EasyBid:Table_Search(MonDKP_DKPTable, deserialized.player, "player")
+                            local search_player = EasyBid:Table_Search(MonDKP_EasyBid_DKPTable, deserialized.player, "player")
 
                             if search_player then
-                                MonDKP_DKPTable[search_player[1][1]].dkp = MonDKP_DKPTable[search_player[1][1]].dkp + deserialized.cost                  -- refund previous looter
-                                MonDKP_DKPTable[search_player[1][1]].lifetime_spent = MonDKP_DKPTable[search_player[1][1]].lifetime_spent + deserialized.cost       -- remove from lifetime_spent
+                                MonDKP_EasyBid_DKPTable[search_player[1][1]].dkp = MonDKP_EasyBid_DKPTable[search_player[1][1]].dkp + deserialized.cost                  -- refund previous looter
+                                MonDKP_EasyBid_DKPTable[search_player[1][1]].lifetime_spent = MonDKP_EasyBid_DKPTable[search_player[1][1]].lifetime_spent + deserialized.cost       -- remove from lifetime_spent
                             end
                         elseif prefix == "MonDKPDelSync" then
                             local players = {strsplit(",", strsub(deserialized.players, 1, -2))}   -- cuts off last "," from string to avoid creating an empty value
@@ -1079,30 +1079,30 @@ function EasyBid:OnCommReceived(prefix, message, distribution, sender)
 
                             for i=1, #players do
                                 if mod == "perc" then
-                                    local search2 = EasyBid:Table_Search(MonDKP_DKPTable, players[i], "player")
+                                    local search2 = EasyBid:Table_Search(MonDKP_EasyBid_DKPTable, players[i], "player")
 
                                     if search2 then
-                                        MonDKP_DKPTable[search2[1][1]].dkp = MonDKP_DKPTable[search2[1][1]].dkp + tonumber(dkp[i])
+                                        MonDKP_EasyBid_DKPTable[search2[1][1]].dkp = MonDKP_EasyBid_DKPTable[search2[1][1]].dkp + tonumber(dkp[i])
                                     end
                                 else
-                                    local search2 = EasyBid:Table_Search(MonDKP_DKPTable, players[i], "player")
+                                    local search2 = EasyBid:Table_Search(MonDKP_EasyBid_DKPTable, players[i], "player")
 
                                     if search2 then
-                                        MonDKP_DKPTable[search2[1][1]].dkp = MonDKP_DKPTable[search2[1][1]].dkp + tonumber(dkp)
+                                        MonDKP_EasyBid_DKPTable[search2[1][1]].dkp = MonDKP_EasyBid_DKPTable[search2[1][1]].dkp + tonumber(dkp)
 
                                         if tonumber(dkp) < 0 then
-                                            MonDKP_DKPTable[search2[1][1]].lifetime_gained = MonDKP_DKPTable[search2[1][1]].lifetime_gained + tonumber(dkp)
+                                            MonDKP_EasyBid_DKPTable[search2[1][1]].lifetime_gained = MonDKP_EasyBid_DKPTable[search2[1][1]].lifetime_gained + tonumber(dkp)
                                         end
                                     end
                                 end
                             end
                         elseif prefix == "MonDKPMerge" then
-                            for i=1, #MonDKP_DKPTable do
-                                if MonDKP_DKPTable[i].class == "NONE" then
-                                    local search = EasyBid:Table_Search(deserialized.Profiles, MonDKP_DKPTable[i].player, "player")
+                            for i=1, #MonDKP_EasyBid_DKPTable do
+                                if MonDKP_EasyBid_DKPTable[i].class == "NONE" then
+                                    local search = EasyBid:Table_Search(deserialized.Profiles, MonDKP_EasyBid_DKPTable[i].player, "player")
 
                                     if search then
-                                        MonDKP_DKPTable[i].class = deserialized.Profiles[search[1][1]].class
+                                        MonDKP_EasyBid_DKPTable[i].class = deserialized.Profiles[search[1][1]].class
                                     end
                                 end
                             end
