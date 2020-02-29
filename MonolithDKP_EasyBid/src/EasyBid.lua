@@ -330,7 +330,7 @@ function EasyBid:FillCurrentItemAndPossiblyShow()
     local _,itemLink,itemRarity,_,_,_,_,_,_,itemIcon,_,itemClassId,itemSubClassId = GetItemInfo(EasyBid.var.currentItem)
 
     if (EasyBid.var.gui.currentItem ~= nil) then
-        local tooltip = AceGUI.tooltip;
+        local tooltip = GameTooltip;
 
         EasyBid.var.gui.currentItem:SetText(itemLink)
         EasyBid.var.gui.currentItem:SetImage(itemIcon)
@@ -340,7 +340,7 @@ function EasyBid:FillCurrentItemAndPossiblyShow()
                 tooltip:SetOwner(EasyBid.var.gui.currentItem.frame, "ANCHOR_NONE")
                 tooltip:ClearAllPoints()
                 -- tooltipu topleva jde na currentItem bottomlevou
-                tooltip:SetPoint("TOPLEFT", EasyBid.var.gui.currentItem.frame, "BOTTOMLEFT")
+                tooltip:SetPoint("TOPLEFT", EasyBid.var.gui.currentItem.frame, "TOPRIGHT")
                 tooltip:SetHyperlink(itemLink);
                 tooltip:Show();
             end
@@ -396,6 +396,14 @@ function EasyBid:FillBidders()
 --    EasyBid.var.maxBidder = { bid=170, player="Killufast"}
 --    EasyBid.var.maxBidValue = 170
 
+    local minMaxValue = MAXIMUM;
+    local maxMaxValue = 0;
+    for index, value in ipairs(EasyBid.var.bidders) do
+        local playerDkp = EasyBid:GetPlayerDkp(value.player);
+        maxMaxValue = math.max(maxMaxValue, playerDkp)
+        minMaxValue = math.min(minMaxValue, playerDkp)
+    end
+
     for index, value in ipairs(EasyBid.var.bidders) do
         if (EasyBid.var.gui.scroll ~= nil) then
             local bidLabel = AceGUI:Create("Label")
@@ -407,9 +415,12 @@ function EasyBid:FillBidders()
             playerLabel:SetText(value.player)
             playerLabel:SetWidth(110)
 
+            local playerDkp = EasyBid:GetPlayerDkp(value.player);
             local maxLabel = AceGUI:Create("Label")
-            maxLabel:SetText("(" .. tostring(EasyBid:GetPlayerDkp(value.player)) .. ")")
+            maxLabel:SetText("(" .. tostring(playerDkp) .. ")")
             maxLabel:SetWidth(50)
+            local dkpPercentage = (playerDkp - minMaxValue) / (maxMaxValue - minMaxValue);
+            maxLabel:SetColor(EasyBid:HSVtoRGB(120 * dkpPercentage, 1, 1))
 
             local group = AceGUI:Create("SimpleGroup")
             group:SetRelativeWidth(1)
@@ -711,7 +722,7 @@ function EasyBid:StartGUI()
     checkMax:SetLabel("Use my MAX")
     checkMax:SetCallback("OnValueChanged", function(widget, name, value) EasyBidSettings.useMyMax = value; EasyBid:setMax(); end)
 
-    local tooltip = AceGUI.tooltip;
+    local tooltip = GameTooltip;
     checkMax:SetCallback("OnEnter", function(widget)
         if (tooltip ~= nil) then
             tooltip:SetOwner(checkMax.frame, "ANCHOR_NONE")
@@ -1149,6 +1160,35 @@ function EasyBid:SendData(prefix, data, target)
             EasyBid:SendCommMessage(prefix, packet, "SAY")
             return;
         end
+    end
+end
+
+function EasyBid:HSVtoRGB(h, s, v)
+    local i; -- int
+    local f, p, q, t; -- float
+    if( s == 0 ) then
+        return v, v, v;
+    end
+
+    h = h / 60; --			// sector 0 to 5
+    i = math.floor( h );
+    f = h - i;		--	// factorial part of h
+    p = v * ( 1 - s );
+    q = v * ( 1 - s * f );
+    t = v * ( 1 - s * ( 1 - f ) );
+
+    if (i == 0) then
+        return v, t, p;
+    elseif(i == 1) then
+        return q, v, p;
+    elseif(i == 2) then
+        return p, v, t;
+    elseif(i == 3) then
+        return p, q, v;
+    elseif(i == 4) then
+        return t, p, v;
+    elseif(i == 5) then
+        return v, p, q;
     end
 end
 
