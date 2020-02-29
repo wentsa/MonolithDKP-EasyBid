@@ -25,11 +25,11 @@ EasyBid.var = {
     bidOfficer = nil,
 --    currentItem = "16908",
     currentItem = nil,
+--    nextMinimum = 10,
+    nextMinimum = nil,
     bidders = {},
     maxBidder = nil,
     maxBidValue = nil,
---    nextMinimum = 10,
-    nextMinimum = nil,
 }
 
 local weaponItemType = 2;
@@ -417,10 +417,14 @@ function EasyBid:FillBidders()
 
             local playerDkp = EasyBid:GetPlayerDkp(value.player);
             local maxLabel = AceGUI:Create("Label")
-            maxLabel:SetText("(" .. tostring(playerDkp) .. ")")
             maxLabel:SetWidth(50)
-            local dkpPercentage = (playerDkp - minMaxValue) / (maxMaxValue - minMaxValue);
-            maxLabel:SetColor(EasyBid:HSVtoRGB(120 * dkpPercentage, 1, 1))
+            if (playerDkp == MAXIMUM) then
+                maxLabel:SetText("")
+            else
+                local dkpPercentage = (playerDkp - minMaxValue) / (maxMaxValue - minMaxValue);
+                maxLabel:SetText("(" .. tostring(playerDkp) .. ")")
+                maxLabel:SetColor(EasyBid:HSVtoRGB(120 * dkpPercentage, 1, 1))
+            end
 
             local group = AceGUI:Create("SimpleGroup")
             group:SetRelativeWidth(1)
