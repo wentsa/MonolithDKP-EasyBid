@@ -6,6 +6,7 @@ local AceConfigDialog = LibStub("AceConfigDialog-3.0")
 local LibAceSerializer = LibStub:GetLibrary("AceSerializer-3.0")
 local LibDeflate = LibStub:GetLibrary("LibDeflate")
 
+local MAXIMUM = 9999;
 EasyBid.var = {
     gui = {
         frame = nil,
@@ -163,6 +164,7 @@ function EasyBid:OnInitialize()
         weapons = {},
         initialized = false,
         position = nil,
+        useMyMax = true,
     } end;
 
     local myName = UnitName("player")
@@ -298,7 +300,7 @@ function EasyBid:GetPlayerDkp(player)
             return MonDKP_DKPTable[search[1][1]].dkp
         end
     end
-    return 9999
+    return MAXIMUM
 end
 
 function EasyBid:CanEquip(cls, itemType, itemSubtype)
@@ -502,6 +504,8 @@ function EasyBid:normalizeBid(value)
 end
 
 function EasyBid:setMyBid(value, change)
+    local max = EasyBid:GetActualMax();
+
     if (value ~= nil) then
         EasyBid.var.myBid = EasyBid:normalizeBid(value)
     elseif (change ~= nil) then
@@ -509,7 +513,7 @@ function EasyBid:setMyBid(value, change)
     end
 
     EasyBid.var.myBid = math.max(EasyBid.var.myBid, EasyBid.var.nextMinimum);
-    EasyBid.var.myBid = math.min(EasyBid.var.myBid, EasyBid:normalizeBid(EasyBid.var.myMax));
+    EasyBid.var.myBid = math.min(EasyBid.var.myBid, EasyBid:normalizeBid(max));
 
     EasyBid.var.gui.editBox:SetText(tostring(EasyBid.var.myBid))
     EasyBid.var.gui.slider:SetValue(EasyBid.var.myBid)
@@ -545,11 +549,35 @@ function EasyBid:PositionFrame()
     end
 end
 
+function EasyBid:GetActualMax()
+    local max = EasyBid.var.myMax;
+    if (max == nil or not EasyBidSettings.useMyMax) then
+        max = MAXIMUM
+    end
+    return max;
+end
+
+function EasyBid:setMax()
+    local max = EasyBid:GetActualMax()
+
+    if (EasyBid.var.gui.slider ~= nil) then
+        EasyBid.var.gui.slider:SetSliderValues(EasyBid.var.minimumBid, EasyBid:normalizeBid(max), EasyBid.var.minimumBid)
+    end
+    if(EasyBid.var.gui.btnSetHalf ~= nil) then
+        EasyBid.var.gui.btnSetHalf:SetCallback("OnClick", function() EasyBid:setMyBid(max / 2, nil) end)
+    end
+    if(EasyBid.var.gui.btnSetMaximum ~= nil) then
+        EasyBid.var.gui.btnSetMaximum:SetCallback("OnClick", function() EasyBid:setMyBid(max, nil) end)
+    end
+
+    EasyBid:setMyBid(EasyBid.var.myBid)
+end
+
 function EasyBid:StartGUI()
     local frame = AceGUI:Create("Frame")
     frame:SetTitle("Monolith DKP Easy Bid")
     frame:SetWidth(600)
-    frame:SetHeight(360)
+    frame:SetHeight(390)
     frame:SetLayout("Flow");
     frame:SetCallback("OnClose",
         function(widget)
@@ -576,7 +604,7 @@ function EasyBid:StartGUI()
     local scrollcontainer = AceGUI:Create("InlineGroup")
     scrollcontainer:SetTitle("History")
     scrollcontainer:SetWidth(240)
-    scrollcontainer:SetHeight(250)
+    scrollcontainer:SetHeight(295)
     scrollcontainer:SetLayout("Fill") -- important!
 
     local scroll = AceGUI:Create("ScrollFrame")
@@ -659,7 +687,6 @@ function EasyBid:StartGUI()
 
     local minBidSlider = AceGUI:Create("Slider")
     minBidSlider:SetRelativeWidth(1)
-    minBidSlider:SetSliderValues(EasyBid.var.minimumBid, EasyBid:normalizeBid(EasyBid.var.myMax), EasyBid.var.minimumBid)
     minBidSlider:SetValue(EasyBid.var.myBid)
     minBidSlider:SetCallback("OnValueChanged", function(widget, name, value) EasyBid:setMyBid(value, nil) end)
 
@@ -673,13 +700,32 @@ function EasyBid:StartGUI()
     btnSetHalf:SetText("HALF")
     btnSetHalf:SetWidth(100)
     btnSetHalf:SetHeight(30)
-    btnSetHalf:SetCallback("OnClick", function() EasyBid:setMyBid(EasyBid.var.myMax / 2, nil) end)
 
     local btnSetMaximum = AceGUI:Create("Button")
     btnSetMaximum:SetText("MAX")
     btnSetMaximum:SetWidth(100)
     btnSetMaximum:SetHeight(30)
-    btnSetMaximum:SetCallback("OnClick", function() EasyBid:setMyBid(EasyBid.var.myMax, nil) end)
+
+    local checkMax = AceGUI:Create("CheckBox")
+    checkMax:SetValue(EasyBidSettings.useMyMax)
+    checkMax:SetLabel("Use my MAX")
+    checkMax:SetCallback("OnValueChanged", function(widget, name, value) EasyBidSettings.useMyMax = value; EasyBid:setMax(); end)
+
+    local tooltip = AceGUI.tooltip;
+    checkMax:SetCallback("OnEnter", function(widget)
+        if (tooltip ~= nil) then
+            tooltip:SetOwner(checkMax.frame, "ANCHOR_NONE")
+            tooltip:ClearAllPoints()
+            tooltip:SetPoint("TOPLEFT", checkMax.frame, "BOTTOMLEFT")
+            tooltip:SetText("Value of your DKP maximum is fetched from the DKP table. You might need to disable this due to data inconsistency.");
+            tooltip:Show();
+        end
+    end);
+    checkMax:SetCallback("OnLeave", function()
+        if (tooltip ~= nil) then
+            tooltip:Hide()
+        end
+    end);
 
     local groupBidder = AceGUI:Create("SimpleGroup")
     groupBidder:SetRelativeWidth(1)
@@ -728,6 +774,7 @@ function EasyBid:StartGUI()
     group:AddChild(groupModify)
     group:AddChild(minBidSlider)
     group:AddChild(groupSet)
+    group:AddChild(checkMax)
 
     EasyBid.var.gui.frame = frame
     EasyBid.var.gui.editBox = editbox
@@ -736,6 +783,10 @@ function EasyBid:StartGUI()
     EasyBid.var.gui.scroll = scroll;
     EasyBid.var.gui.highestBidder = highestBidder;
     EasyBid.var.gui.highestBid = highestBid;
+    EasyBid.var.gui.btnSetHalf = btnSetHalf
+    EasyBid.var.gui.btnSetMaximum = btnSetMaximum
+
+    EasyBid:setMax();
 
     EasyBid:FillBidders();
     local shouldShow = EasyBid:FillCurrentItemAndPossiblyShow();
@@ -762,6 +813,10 @@ function EasyBid:StartGUI()
 
     highestBidder:ClearAllPoints()
     highestBidder:SetPoint("LEFT", highestBid.frame, "RIGHT")
+
+    checkMax:ClearAllPoints()
+    checkMax:SetPoint("TOPLEFT", groupSet.frame, "BOTTOMLEFT", 0, -25)
+
 
     if (shouldShow) then
         EasyBid.var.gui.frame:Show();
