@@ -496,7 +496,13 @@ function EasyBid:OnMessage(self, message, author)
         elseif(t[2] == "stop") then
             EasyBid:SendData("MonDKPCommand", "StopBidTimer")
         end
-    elseif(string.find(message, "Bidding closed!") ~= nil) then
+    elseif(
+        string.find(message, "Bidding Closed!") ~= nil and
+        (
+            EasyBid.var.bidOfficer == author or
+            (EasyBid.var.bidOfficer .. "-" .. GetRealmName()) == author
+        )
+    ) then
         EasyBid:HideBiddingFrame()
 
         EasyBid.var.minimumBid = nil;
@@ -614,7 +620,7 @@ function EasyBid:StartGUI()
             self.hooks[f].OnHide(f)
         end
     )
-    frame.frame:SetFrameStrata("MEDIUM")
+    frame.frame:SetFrameStrata("DIALOG")
 
     local scrollcontainer = AceGUI:Create("InlineGroup")
     scrollcontainer:SetTitle("History")
@@ -782,6 +788,7 @@ function EasyBid:StartGUI()
 
     frame:AddChild(scrollcontainer)
     frame:AddChild(group)
+    frame:AddChild(checkMax)
 
     group:AddChild(currentItem)
     group:AddChild(groupBidder)
@@ -789,7 +796,6 @@ function EasyBid:StartGUI()
     group:AddChild(groupModify)
     group:AddChild(minBidSlider)
     group:AddChild(groupSet)
-    group:AddChild(checkMax)
 
     EasyBid.var.gui.frame = frame
     EasyBid.var.gui.editBox = editbox
@@ -830,7 +836,7 @@ function EasyBid:StartGUI()
     highestBidder:SetPoint("LEFT", highestBid.frame, "RIGHT")
 
     checkMax:ClearAllPoints()
-    checkMax:SetPoint("TOPLEFT", groupSet.frame, "BOTTOMLEFT", 0, -25)
+    checkMax:SetPoint("BOTTOMLEFT", frame.frame, "BOTTOMLEFT", 20, 40)
 
 
     if (shouldShow) then
