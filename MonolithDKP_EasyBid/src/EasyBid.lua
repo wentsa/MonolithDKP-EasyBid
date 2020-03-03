@@ -271,7 +271,12 @@ function EasyBid:GetClass(player)
     end
 
     if (cls == nil) then
-        local _, classFilename = UnitClass(player)
+        local playerForClass = player;
+        if (UnitName("player") == player) then
+           playerForClass = "player";
+        end
+
+        local _, classFilename = UnitClass(playerForClass)
         cls = classFilename
     end
 
@@ -383,6 +388,7 @@ function EasyBid:FillBidders()
     end
 
 --    EasyBid.var.bidders = {
+--        {bid=9999, player="Zeusovaneter"},
 --        {bid=170, player="Killufast"},
 --        {bid=160, player="Zeusovaneter"},
 --        {bid=70, player="Uada"},
@@ -393,8 +399,8 @@ function EasyBid:FillBidders()
 --        {bid=20, player="Dahed"},
 --    }
 --
---    EasyBid.var.maxBidder = { bid=170, player="Killufast"}
---    EasyBid.var.maxBidValue = 170
+--    EasyBid.var.maxBidder = { bid=9999, player="Zeusovaneter"}
+--    EasyBid.var.maxBidValue = 9999
 
     local minMaxValue = MAXIMUM;
     local maxMaxValue = 0;
