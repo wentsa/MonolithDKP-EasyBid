@@ -7,3 +7,4 @@ const AddonDir = `${WoW_dir}\\Interface\\Addons\\MonolithDKP_EasyBid`;
 
 rimraf.sync(AddonDir);
 copydir.sync(path.join(__dirname, '../src'), AddonDir);
+copydir.sync(path.join(__dirname, '../Libs'), `${AddonDir}\\Libs`);
