@@ -16,6 +16,7 @@ EasyBid.var = {
         highestBidder = nil,
         highestBid = nil,
         isVisible = false,
+        scrollContainer = nil,
     },
 --    minimumBid = 10,
     minimumBid = nil,
@@ -418,6 +419,9 @@ function EasyBid:FillBidders()
         end
     end
 
+    local playersAlreadyShown = {};
+    local biddersNumber = 0;
+
     for index, value in ipairs(EasyBid.var.bidders) do
         if (EasyBid.var.gui.scroll ~= nil) then
             local bidLabel = AceGUI:Create("Label")
@@ -433,13 +437,19 @@ function EasyBid:FillBidders()
             local playerDkp = EasyBid:GetPlayerDkp(value.player);
             local maxLabel = AceGUI:Create("Label")
             maxLabel:SetWidth(50)
-            if (playerDkp == MAXIMUM) then
-                maxLabel:SetText("(???)")
-                maxLabel:SetColor(EasyBid:HSVtoRGB(0, 1, 1))
+
+            if (playersAlreadyShown[value.player]) then
+                maxLabel:SetText("")
             else
-                local dkpPercentage = (playerDkp - minMaxValue) / (maxMaxValue - minMaxValue);
-                maxLabel:SetText("(" .. tostring(playerDkp) .. ")")
-                maxLabel:SetColor(EasyBid:HSVtoRGB(120 * dkpPercentage, 1, 1))
+                biddersNumber = biddersNumber + 1;
+                if (playerDkp == MAXIMUM) then
+                    maxLabel:SetText("(???)")
+                    maxLabel:SetColor(EasyBid:HSVtoRGB(0, 1, 1))
+                else
+                    local dkpPercentage = (playerDkp - minMaxValue) / (maxMaxValue - minMaxValue);
+                    maxLabel:SetText("(" .. tostring(playerDkp) .. ")")
+                    maxLabel:SetColor(EasyBid:HSVtoRGB(120 * dkpPercentage, 1, 1))
+                end
             end
 
             local group = AceGUI:Create("SimpleGroup")
@@ -457,12 +467,18 @@ function EasyBid:FillBidders()
             maxLabel:SetPoint("LEFT", playerLabel.frame, "RIGHT")
 
             EasyBid.var.gui.scroll:AddChild(group)
+
+            playersAlreadyShown[value.player] = true
         end
 
         if (value.bid > EasyBid.var.maxBidValue) then
             EasyBid.var.maxBidder = value
             EasyBid.var.maxBidValue = value.bid
         end
+    end
+
+    if (EasyBid.var.gui.scrollContainer ~= nil) then
+        EasyBid.var.gui.scrollContainer:SetTitle("History (" .. tostring(biddersNumber) .. " bidders)")
     end
 
     if (EasyBid.var.gui.highestBidder ~= nil and EasyBid.var.gui.highestBid ~= nil) then
@@ -823,6 +839,7 @@ function EasyBid:StartGUI()
     EasyBid.var.gui.highestBid = highestBid;
     EasyBid.var.gui.btnSetHalf = btnSetHalf
     EasyBid.var.gui.btnSetMaximum = btnSetMaximum
+    EasyBid.var.gui.scrollContainer = scrollcontainer;
 
     EasyBid:setMax();
 
