@@ -347,6 +347,7 @@ function EasyBid:FillCurrentItemAndPossiblyShow()
         EasyBid.var.gui.currentItem:SetImageSize(25, 25)
         EasyBid.var.gui.currentItem:SetCallback("OnEnter", function(widget)
             if (tooltip ~= nil) then
+                tooltip:ClearLines();
                 tooltip:SetOwner(EasyBid.var.gui.currentItem.frame, "ANCHOR_NONE")
                 tooltip:ClearAllPoints()
                 -- tooltipu topleva jde na currentItem bottomlevou
@@ -395,9 +396,10 @@ function EasyBid:FillBidders()
     end
 
 --    EasyBid.var.bidders = {
---        {bid=9999, player="Zeusovaneter"},
+----        {bid=9999, player="Zeusovaneter"},
 --        {bid=170, player="Killufast"},
 --        {bid=160, player="Zeusovaneter"},
+--        {bid=150, player="Abcdehg"},
 --        {bid=70, player="Uada"},
 --        {bid=60, player="Moominka"},
 --        {bid=60, player="Gorben"},
@@ -405,9 +407,6 @@ function EasyBid:FillBidders()
 --        {bid=40, player="Zheith"},
 --        {bid=20, player="Dahed"},
 --    }
---
---    EasyBid.var.maxBidder = { bid=9999, player="Zeusovaneter"}
---    EasyBid.var.maxBidValue = 9999
 
     local minMaxValue = MAXIMUM;
     local maxMaxValue = 0;
@@ -752,6 +751,7 @@ function EasyBid:StartGUI()
     local tooltip = GameTooltip;
     checkMax:SetCallback("OnEnter", function(widget)
         if (tooltip ~= nil) then
+            tooltip:ClearLines();
             tooltip:SetOwner(checkMax.frame, "ANCHOR_NONE")
             tooltip:ClearAllPoints()
             tooltip:SetPoint("TOPLEFT", checkMax.frame, "BOTTOMLEFT")
