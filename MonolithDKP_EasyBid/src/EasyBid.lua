@@ -152,7 +152,9 @@ EasyBid.Options = {
                 if (EasyBid.var.gui.isVisible) then
                     EasyBid:PositionFrame()
                 end
+                EasyBid:Print("----------------------------------------")
                 EasyBid:Print("Bidding window position reset succesful.")
+                EasyBid:Print("----------------------------------------")
             end
         }
     }
@@ -253,7 +255,9 @@ function EasyBid:ShowBiddingFrame()
         if (EasyBid.var.currentItem ~= nil) then
             EasyBid:StartGUI()
         else
+            EasyBid:Print("----------------------------------------")
             EasyBid:Print("No bidding in progress")
+            EasyBid:Print("----------------------------------------")
         end
     end
 end
@@ -369,7 +373,9 @@ function EasyBid:FillCurrentItemAndPossiblyShow()
             end
 
             if (not shouldShow) then
+                EasyBid:Print("----------------------------------------")
                 EasyBid:Print("Bidding frame not shown due to settings (" .. itemSubTypeName .. ")")
+                EasyBid:Print("----------------------------------------")
             end
 
             return shouldShow
