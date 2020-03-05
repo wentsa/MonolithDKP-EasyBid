@@ -407,15 +407,18 @@ function EasyBid:FillBidders()
     local maxMaxValue = 0;
     for index, value in ipairs(EasyBid.var.bidders) do
         local playerDkp = EasyBid:GetPlayerDkp(value.player);
-        maxMaxValue = math.max(maxMaxValue, playerDkp)
-        minMaxValue = math.min(minMaxValue, playerDkp)
+        if (playerDkp ~= MAXIMUM) then
+            maxMaxValue = math.max(maxMaxValue, playerDkp)
+            minMaxValue = math.min(minMaxValue, playerDkp)
+        end
     end
 
     for index, value in ipairs(EasyBid.var.bidders) do
         if (EasyBid.var.gui.scroll ~= nil) then
             local bidLabel = AceGUI:Create("Label")
             bidLabel:SetWidth(50)
-            bidLabel:SetText(value.bid)
+            bidLabel:SetText(value.bid .. "   ")
+            bidLabel.label:SetJustifyH("RIGHT")
 
             local playerLabel = AceGUI:Create("Label")
             playerLabel:SetColor(EasyBid:GetClassColor(value.player))
@@ -426,7 +429,8 @@ function EasyBid:FillBidders()
             local maxLabel = AceGUI:Create("Label")
             maxLabel:SetWidth(50)
             if (playerDkp == MAXIMUM) then
-                maxLabel:SetText("")
+                maxLabel:SetText("(???)")
+                maxLabel:SetColor(EasyBid:HSVtoRGB(0, 1, 1))
             else
                 local dkpPercentage = (playerDkp - minMaxValue) / (maxMaxValue - minMaxValue);
                 maxLabel:SetText("(" .. tostring(playerDkp) .. ")")
