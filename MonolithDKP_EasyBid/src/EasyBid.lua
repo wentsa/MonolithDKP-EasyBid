@@ -30,6 +30,7 @@ EasyBid.var = {
     bidders = {},
     maxBidder = nil,
     maxBidValue = nil,
+    bidStep = 10,
 }
 
 local weaponItemType = 2;
@@ -464,7 +465,7 @@ function EasyBid:FillBidders()
             EasyBid.var.gui.highestBidder:SetColor(EasyBid:GetClassColor(EasyBid.var.maxBidder.player))
         else
             EasyBid.var.gui.highestBid:SetText("0")
-            EasyBid.var.gui.highestBidder:SetText("-- NO BIDDER --")
+            EasyBid.var.gui.highestBidder:SetText("- NO BIDDER -")
             EasyBid.var.gui.highestBidder:SetColor(0.7, 0.7, 0.7)
         end
     end
@@ -523,7 +524,7 @@ end
 function EasyBid:normalizeBid(value)
     if (value ~= nil) then
         local parsed = tonumber(value)
-        parsed = parsed - (parsed % EasyBid.var.minimumBid)
+        parsed = parsed - ((parsed - EasyBid.var.minimumBid) % EasyBid.var.bidStep)
         return parsed
     end
 
@@ -549,7 +550,7 @@ end
 function EasyBid:SetNextMinimum()
     local minimum = EasyBid.var.minimumBid
     if (EasyBid.var.maxBidder ~= nil) then
-        minimum = minimum + EasyBid.var.maxBidder.bid
+        minimum = EasyBid.var.maxBidder.bid + EasyBid.var.bidStep;
     end
     EasyBid.var.nextMinimum = minimum
 
@@ -588,7 +589,7 @@ function EasyBid:setMax()
     local max = EasyBid:GetActualMax()
 
     if (EasyBid.var.gui.slider ~= nil) then
-        EasyBid.var.gui.slider:SetSliderValues(EasyBid.var.minimumBid, EasyBid:normalizeBid(max), EasyBid.var.minimumBid)
+        EasyBid.var.gui.slider:SetSliderValues(EasyBid.var.minimumBid, EasyBid:normalizeBid(max), EasyBid.var.bidStep)
     end
     if(EasyBid.var.gui.btnSetHalf ~= nil) then
         EasyBid.var.gui.btnSetHalf:SetCallback("OnClick", function() EasyBid:setMyBid(max / 2, nil) end)
@@ -677,40 +678,40 @@ function EasyBid:StartGUI()
     end)
 
     local btnAdd10 = AceGUI:Create("Button")
-    btnAdd10:SetText("+"..EasyBid.var.minimumBid)
+    btnAdd10:SetText("+"..EasyBid.var.bidStep)
     btnAdd10:SetWidth(100)
     btnAdd10:SetHeight(30)
-    btnAdd10:SetCallback("OnClick", function() EasyBid:setMyBid(nil, EasyBid.var.minimumBid) end)
+    btnAdd10:SetCallback("OnClick", function() EasyBid:setMyBid(nil, EasyBid.var.bidStep) end)
 
     local btnAdd50 = AceGUI:Create("Button")
-    btnAdd50:SetText("+"..(5 * EasyBid.var.minimumBid))
+    btnAdd50:SetText("+"..(5 * EasyBid.var.bidStep))
     btnAdd50:SetWidth(100)
     btnAdd50:SetHeight(30)
-    btnAdd50:SetCallback("OnClick", function() EasyBid:setMyBid(nil, 5 * EasyBid.var.minimumBid) end)
+    btnAdd50:SetCallback("OnClick", function() EasyBid:setMyBid(nil, 5 * EasyBid.var.bidStep) end)
 
     local btnAdd100 = AceGUI:Create("Button")
-    btnAdd100:SetText("+"..(10 * EasyBid.var.minimumBid))
+    btnAdd100:SetText("+"..(10 * EasyBid.var.bidStep))
     btnAdd100:SetWidth(100)
     btnAdd100:SetHeight(30)
-    btnAdd100:SetCallback("OnClick", function() EasyBid:setMyBid(nil, 10 * EasyBid.var.minimumBid) end)
+    btnAdd100:SetCallback("OnClick", function() EasyBid:setMyBid(nil, 10 * EasyBid.var.bidStep) end)
 
     local btnMinus10 = AceGUI:Create("Button")
-    btnMinus10:SetText("-"..EasyBid.var.minimumBid)
+    btnMinus10:SetText("-"..EasyBid.var.bidStep)
     btnMinus10:SetWidth(100)
     btnMinus10:SetHeight(30)
-    btnMinus10:SetCallback("OnClick", function() EasyBid:setMyBid(nil, -EasyBid.var.minimumBid) end)
+    btnMinus10:SetCallback("OnClick", function() EasyBid:setMyBid(nil, -EasyBid.var.bidStep) end)
 
     local btnMinus50 = AceGUI:Create("Button")
-    btnMinus50:SetText("-"..(5 * EasyBid.var.minimumBid))
+    btnMinus50:SetText("-"..(5 * EasyBid.var.bidStep))
     btnMinus50:SetWidth(100)
     btnMinus50:SetHeight(30)
-    btnMinus50:SetCallback("OnClick", function() EasyBid:setMyBid(nil, -5 * EasyBid.var.minimumBid) end)
+    btnMinus50:SetCallback("OnClick", function() EasyBid:setMyBid(nil, -5 * EasyBid.var.bidStep) end)
 
     local btnMinus100 = AceGUI:Create("Button")
-    btnMinus100:SetText("-"..(10 * EasyBid.var.minimumBid))
+    btnMinus100:SetText("-"..(10 * EasyBid.var.bidStep))
     btnMinus100:SetWidth(100)
     btnMinus100:SetHeight(30)
-    btnMinus100:SetCallback("OnClick", function() EasyBid:setMyBid(nil, -10 * EasyBid.var.minimumBid) end)
+    btnMinus100:SetCallback("OnClick", function() EasyBid:setMyBid(nil, -10 * EasyBid.var.bidStep) end)
 
     local minBidSlider = AceGUI:Create("Slider")
     minBidSlider:SetRelativeWidth(1)
