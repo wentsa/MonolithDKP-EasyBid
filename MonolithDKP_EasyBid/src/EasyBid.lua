@@ -24,7 +24,7 @@ EasyBid.var = {
     myBid = nil,
 --    bidOfficer = "Karthay",
     bidOfficer = nil,
---    currentItem = "16908",
+--    currentItem = "16929",
     currentItem = nil,
 --    nextMinimum = 10,
     nextMinimum = nil,
@@ -397,13 +397,15 @@ function EasyBid:FillBidders()
     end
 
 --    EasyBid.var.bidders = {
-----        {bid=9999, player="Zeusovaneter"},
+--        {bid=9999, player="Zeusovaneter"},
 --        {bid=170, player="Killufast"},
 --        {bid=160, player="Zeusovaneter"},
+--        {bid=155, player="Gorben"},
 --        {bid=150, player="Abcdehg"},
 --        {bid=70, player="Uada"},
 --        {bid=60, player="Moominka"},
 --        {bid=60, player="Gorben"},
+--        {bid=55, player="Killufast"},
 --        {bid=50, player="Caspi"},
 --        {bid=40, player="Zheith"},
 --        {bid=20, player="Dahed"},
@@ -446,9 +448,13 @@ function EasyBid:FillBidders()
                     maxLabel:SetText("(???)")
                     maxLabel:SetColor(EasyBid:HSVtoRGB(0, 1, 1))
                 else
-                    local dkpPercentage = (playerDkp - minMaxValue) / (maxMaxValue - minMaxValue);
                     maxLabel:SetText("(" .. tostring(playerDkp) .. ")")
-                    maxLabel:SetColor(EasyBid:HSVtoRGB(120 * dkpPercentage, 1, 1))
+                    if (minMaxValue == maxMaxValue) then
+                        maxLabel:SetColor(EasyBid:HSVtoRGB(120, 1, 1))
+                    else
+                        local dkpPercentage = (playerDkp - minMaxValue) / (maxMaxValue - minMaxValue);
+                        maxLabel:SetColor(EasyBid:HSVtoRGB(120 * dkpPercentage, 1, 1))
+                    end
                 end
             end
 
