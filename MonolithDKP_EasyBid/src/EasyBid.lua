@@ -18,15 +18,10 @@ EasyBid.var = {
         isVisible = false,
         scrollContainer = nil,
     },
---    minimumBid = 10,
     minimumBid = nil,
---    myBid = 10,
     myBid = nil,
---    bidOfficer = "Karthay",
     bidOfficer = nil,
---    currentItem = "16929",
     currentItem = nil,
---    nextMinimum = 10,
     nextMinimum = nil,
     bidders = {},
     maxBidder = nil,
@@ -395,21 +390,6 @@ function EasyBid:FillBidders()
     if (EasyBid.var.gui.scroll ~= nil) then
         EasyBid.var.gui.scroll:ReleaseChildren();
     end
-
---    EasyBid.var.bidders = {
---        {bid=9999, player="Zeusovaneter"},
---        {bid=170, player="Killufast"},
---        {bid=160, player="Zeusovaneter"},
---        {bid=155, player="Gorben"},
---        {bid=150, player="Abcdehg"},
---        {bid=70, player="Uada"},
---        {bid=60, player="Moominka"},
---        {bid=60, player="Gorben"},
---        {bid=55, player="Killufast"},
---        {bid=50, player="Caspi"},
---        {bid=40, player="Zheith"},
---        {bid=20, player="Dahed"},
---    }
 
     local minMaxValue = MAXIMUM;
     local maxMaxValue = 0;
