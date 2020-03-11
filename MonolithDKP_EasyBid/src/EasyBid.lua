@@ -1018,7 +1018,7 @@ function EasyBid:OnCommReceived(prefix, message, distribution, sender)
                         EasyBid.var.nextMinimum = nil
                     elseif command == "BidInfo" then
                         EasyBid.var.currentItem = arg1
-                        EasyBid.var.minimumBid = tonumber(arg2)
+                        EasyBid.var.minimumBid = tonumber(arg2) or EasyBid.var.bidStep
                         EasyBid.var.bidOfficer = sender
                         EasyBid.var.myBid = EasyBid.var.minimumBid
                         EasyBid.var.nextMinimum = EasyBid.var.minimumBid
