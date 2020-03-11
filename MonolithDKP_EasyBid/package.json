@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "dependencies": {},
   "devDependencies": {
+    "archiver": "^3.1.1",
     "copy-dir": "^1.2.0",
     "rimraf": "^3.0.2"
   }
