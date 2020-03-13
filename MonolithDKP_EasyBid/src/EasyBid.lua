@@ -561,8 +561,9 @@ end
 function EasyBid:SetNextMinimum()
     local minimum = EasyBid.var.minimumBid
     if (EasyBid.var.maxBidder ~= nil) then
-        minimum = EasyBid.var.maxBidder.bid + EasyBid.var.bidStep;
+        minimum = EasyBid:normalizeBid(EasyBid.var.maxBidder.bid + EasyBid.var.bidStep);
     end
+
     EasyBid.var.nextMinimum = minimum
 
     if (EasyBid.var.myBid ~= nil and minimum ~= nil and EasyBid.var.gui.editBox ~= nil and EasyBid.var.myBid < minimum) then
