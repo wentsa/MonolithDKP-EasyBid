@@ -6,7 +6,8 @@
 
 ## OptionalDeps: MonolithDKP
 
-## SavedVariablesPerCharacter: MonDKP_EasyBid_DKPTable, EasyBidSettings
+## SavedVariables: MonDKP_EasyBid_DKPTable
+## SavedVariablesPerCharacter: EasyBidSettings
 
 ## Author: Tomas Chalupnik (tchalupnik.cz)
 

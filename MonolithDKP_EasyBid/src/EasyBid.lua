@@ -6,7 +6,7 @@ local AceConfigDialog = LibStub("AceConfigDialog-3.0")
 local LibAceSerializer = LibStub:GetLibrary("AceSerializer-3.0")
 local LibDeflate = LibStub:GetLibrary("LibDeflate")
 
-local MAXIMUM = 9999;
+local MAXIMUM = 99999;
 EasyBid.var = {
     gui = {
         frame = nil,
@@ -17,6 +17,7 @@ EasyBid.var = {
         highestBid = nil,
         isVisible = false,
         scrollContainer = nil,
+        whisp = nil,
     },
     minimumBid = nil,
     myBid = nil,
@@ -27,6 +28,7 @@ EasyBid.var = {
     maxBidder = nil,
     maxBidValue = nil,
     bidStep = 10,
+    lastOfficerWhisper = nil,
 }
 
 local weaponItemType = 2;
@@ -201,6 +203,7 @@ function EasyBid:OnEnable()
 --    EasyBid:RegisterEvent("CHAT_MSG_SAY", "OnMessage")
     EasyBid:RegisterEvent("CHAT_MSG_RAID", "OnMessage")
     EasyBid:RegisterEvent("CHAT_MSG_RAID_WARNING", "OnMessage")
+    EasyBid:RegisterEvent("CHAT_MSG_WHISPER", "OnWhisperMessage")
 
     EasyBid:RegisterEvent("GET_ITEM_INFO_RECEIVED", "OnItemInfoReceived")
 
@@ -493,8 +496,20 @@ end
 
 local Bids_Submitted = {};
 
--- ebid start 16908 10
--- ebid bid Killufast 50
+function EasyBid:OnWhisperMessage(self, message, author)
+    if (
+        EasyBid.var.bidOfficer ~= nil and (
+            EasyBid.var.bidOfficer == author or
+            (EasyBid.var.bidOfficer .. "-" .. GetRealmName()) == author
+        )
+    ) then
+        EasyBid.var.lastOfficerWhisper = message;
+        if(EasyBid.var.gui.whisp ~= nil) then
+            EasyBid.var.gui.whisp:SetText(EasyBid.var.lastOfficerWhisper)
+        end
+    end
+end
+
 function EasyBid:OnMessage(self, message, author)
     if(string.find(message, "ebid") ~= nil) then
         local t = {}
@@ -517,8 +532,10 @@ function EasyBid:OnMessage(self, message, author)
     elseif(
         string.find(message, "Bidding Closed!") ~= nil and
         (
-            EasyBid.var.bidOfficer == author or
-            (EasyBid.var.bidOfficer .. "-" .. GetRealmName()) == author
+            EasyBid.var.bidOfficer ~= nil and (
+                EasyBid.var.bidOfficer == author or
+                (EasyBid.var.bidOfficer .. "-" .. GetRealmName()) == author
+            )
         )
     ) then
         EasyBid:HideBiddingFrame()
@@ -528,7 +545,8 @@ function EasyBid:OnMessage(self, message, author)
         EasyBid.var.bidOfficer = nil;
         EasyBid.var.currentItem = nil;
         EasyBid.var.bidders = {};
-        EasyBid.var.nextMinimum = nil
+        EasyBid.var.nextMinimum = nil;
+        EasyBid.var.lastOfficerWhisper = nil;
     end
 end
 
@@ -617,7 +635,7 @@ function EasyBid:StartGUI()
     local frame = AceGUI:Create("Frame")
     frame:SetTitle("Monolith DKP Easy Bid")
     frame:SetWidth(600)
-    frame:SetHeight(390)
+    frame:SetHeight(420)
     frame:SetLayout("Flow");
     frame:SetCallback("OnClose",
         function(widget)
@@ -644,7 +662,7 @@ function EasyBid:StartGUI()
     local scrollcontainer = AceGUI:Create("InlineGroup")
     scrollcontainer:SetTitle("History")
     scrollcontainer:SetWidth(240)
-    scrollcontainer:SetHeight(295)
+    scrollcontainer:SetHeight(325)
     scrollcontainer:SetLayout("Fill") -- important!
 
     local scroll = AceGUI:Create("ScrollFrame")
@@ -746,6 +764,18 @@ function EasyBid:StartGUI()
     btnSetMaximum:SetWidth(100)
     btnSetMaximum:SetHeight(30)
 
+    local whisp = AceGUI:Create("Label");
+    whisp:SetRelativeWidth(1)
+    local Path, Size, Flags = whisp.label:GetFont()
+    whisp.label:SetFont(Path, 13, Flags);
+    whisp:SetColor(0.4, 0.96, 0.26)
+
+    if(EasyBid.var.lastOfficerWhisper ~= nil) then
+        whisp:SetText(EasyBid.var.lastOfficerWhisper)
+    else
+        whisp:SetText("")
+    end
+
     local checkMax = AceGUI:Create("CheckBox")
     checkMax:SetValue(EasyBidSettings.useMyMax)
     checkMax:SetLabel("Use my MAX")
@@ -803,7 +833,7 @@ function EasyBid:StartGUI()
 
     local group = AceGUI:Create("SimpleGroup")
     group:SetWidth(300)
-    group:SetHeight(350)
+    group:SetHeight(380)
     group:SetLayout("List")
 
     frame:AddChild(scrollcontainer)
@@ -816,6 +846,7 @@ function EasyBid:StartGUI()
     group:AddChild(groupModify)
     group:AddChild(minBidSlider)
     group:AddChild(groupSet)
+    group:AddChild(whisp)
 
     EasyBid.var.gui.frame = frame
     EasyBid.var.gui.editBox = editbox
@@ -827,6 +858,7 @@ function EasyBid:StartGUI()
     EasyBid.var.gui.btnSetHalf = btnSetHalf
     EasyBid.var.gui.btnSetMaximum = btnSetMaximum
     EasyBid.var.gui.scrollContainer = scrollcontainer;
+    EasyBid.var.gui.whisp = whisp;
 
     EasyBid:setMax();
 
@@ -852,6 +884,9 @@ function EasyBid:StartGUI()
 
     groupModify:ClearAllPoints()
     groupModify:SetPoint("TOPLEFT", groupBid.frame, "BOTTOMLEFT", 0, -5);
+
+    whisp:ClearAllPoints()
+    whisp:SetPoint("TOPLEFT", groupSet.frame, "BOTTOMLEFT", 0, -15);
 
     highestBidder:ClearAllPoints()
     highestBidder:SetPoint("LEFT", highestBid.frame, "RIGHT")
@@ -1016,7 +1051,8 @@ function EasyBid:OnCommReceived(prefix, message, distribution, sender)
                         EasyBid.var.bidOfficer = nil;
                         EasyBid.var.currentItem = nil;
                         EasyBid.var.bidders = {};
-                        EasyBid.var.nextMinimum = nil
+                        EasyBid.var.nextMinimum = nil;
+                        EasyBid.var.lastOfficerWhisper = nil;
                     elseif command == "BidInfo" then
                         EasyBid.var.currentItem = arg1
                         EasyBid.var.minimumBid = tonumber(arg2) or EasyBid.var.bidStep
