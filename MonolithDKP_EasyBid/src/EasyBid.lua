@@ -243,6 +243,7 @@ function EasyBid:OnDisable()
 --    EasyBid:UnregisterEvent("CHAT_MSG_SAY")
     EasyBid:UnregisterEvent("CHAT_MSG_RAID")
     EasyBid:UnregisterEvent("CHAT_MSG_RAID_WARNING")
+    EasyBid:UnregisterEvent("CHAT_MSG_WHISPER")
 
     EasyBid:UnregisterChatCommand("ebid")
 
