@@ -352,7 +352,7 @@ function EasyBid:FillCurrentItemAndPossiblyShow()
                 tooltip:SetOwner(EasyBid.var.gui.currentItem.frame, "ANCHOR_NONE")
                 tooltip:ClearAllPoints()
                 -- tooltipu topleva jde na currentItem bottomlevou
-                tooltip:SetPoint("TOPLEFT", EasyBid.var.gui.currentItem.frame, "TOPRIGHT")
+                tooltip:SetPoint("TOPRIGHT", EasyBid.var.gui.currentItem.frame, "TOPLEFT")
                 tooltip:SetHyperlink(itemLink);
                 tooltip:Show();
             end
