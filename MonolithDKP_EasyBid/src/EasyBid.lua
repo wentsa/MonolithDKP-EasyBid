@@ -479,10 +479,20 @@ function EasyBid:FillBidders()
             EasyBid.var.gui.highestBid:SetText(EasyBid.var.maxBidder.bid)
             EasyBid.var.gui.highestBidder:SetText(EasyBid.var.maxBidder.player)
             EasyBid.var.gui.highestBidder:SetColor(EasyBid:GetClassColor(EasyBid.var.maxBidder.player))
+
+            local maxBidderDkp = EasyBid:GetPlayerDkp(EasyBid.var.maxBidder.player);
+            local isHisMax = maxBidderDkp ~= MAXIMUM and maxBidderDkp == EasyBid.var.maxBidder.bid;
+
+            if (isHisMax) then
+                EasyBid.var.gui.isBidMax:SetText(" (MAXIMUM)")
+            else
+                EasyBid.var.gui.isBidMax:SetText("")
+            end
         else
             EasyBid.var.gui.highestBid:SetText("0")
             EasyBid.var.gui.highestBidder:SetText("- NO BIDDER -")
             EasyBid.var.gui.highestBidder:SetColor(0.7, 0.7, 0.7)
+            EasyBid.var.gui.isBidMax:SetText("")
         end
     end
 
@@ -694,6 +704,10 @@ function EasyBid:StartGUI()
     highestBidder.label:SetFont(Path, 28, Flags);
     highestBidder:SetRelativeWidth(0.7)
 
+    local isBidMax = AceGUI:Create("Label")
+    local Path, Size, Flags = isBidMax.label:GetFont()
+    isBidMax.label:SetFont(Path, 10, Flags);
+
     local editbox = AceGUI:Create("EditBox")
     editbox:SetText(tostring(EasyBid.var.minimumBid))
 --    editbox:SetLabel("Insert text:")
@@ -850,6 +864,7 @@ function EasyBid:StartGUI()
 
     group:AddChild(currentItem)
     group:AddChild(groupBidder)
+    group:AddChild(isBidMax)
     group:AddChild(groupBid)
     group:AddChild(groupModify)
     group:AddChild(minBidSlider)
@@ -887,10 +902,13 @@ function EasyBid:StartGUI()
     currentItem:SetPoint("TOPLEFT", group.frame, "TOPLEFT", 0, 0);
 
     groupBidder:ClearAllPoints()
-    groupBidder:SetPoint("TOPLEFT", currentItem.frame, "BOTTOMLEFT", 0, -5);
+    groupBidder:SetPoint("TOPLEFT", currentItem.frame, "BOTTOMLEFT", 0, -15);
+
+    isBidMax:ClearAllPoints()
+    isBidMax:SetPoint("TOPLEFT", groupBidder.frame, "BOTTOMLEFT", 0, -5);
 
     groupBid:ClearAllPoints()
-    groupBid:SetPoint("TOPLEFT", groupBidder.frame, "BOTTOMLEFT", 0, -25);
+    groupBid:SetPoint("TOPLEFT", isBidMax.frame, "BOTTOMLEFT", 0, -15);
 
     groupModify:ClearAllPoints()
     groupModify:SetPoint("TOPLEFT", groupBid.frame, "BOTTOMLEFT", 0, -5);
