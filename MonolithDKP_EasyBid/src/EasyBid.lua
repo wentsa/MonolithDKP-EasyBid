@@ -18,6 +18,7 @@ EasyBid.var = {
         isVisible = false,
         scrollContainer = nil,
         whisp = nil,
+        btnBid = nil,
     },
     minimumBid = nil,
     myBid = nil,
@@ -561,20 +562,26 @@ function EasyBid:normalizeBid(value)
     return nil
 end
 
-function EasyBid:setMyBid(value, change)
+function EasyBid:setMyBid(value, change, force)
     local max = EasyBid:GetActualMax();
 
     if (value ~= nil) then
-        EasyBid.var.myBid = EasyBid:normalizeBid(value)
+        EasyBid.var.myBid = value
     elseif (change ~= nil) then
         EasyBid.var.myBid = EasyBid.var.myBid + change
     end
 
-    EasyBid.var.myBid = math.max(EasyBid.var.myBid, EasyBid.var.nextMinimum);
-    EasyBid.var.myBid = math.min(EasyBid.var.myBid, EasyBid:normalizeBid(max));
+    if (not force) then
+        EasyBid.var.myBid = EasyBid:normalizeBid(EasyBid.var.myBid)
+
+        EasyBid.var.myBid = math.max(EasyBid.var.myBid, EasyBid.var.nextMinimum);
+        EasyBid.var.myBid = math.min(EasyBid.var.myBid, EasyBid:normalizeBid(max));
+    end
 
     EasyBid.var.gui.editBox:SetText(tostring(EasyBid.var.myBid))
     EasyBid.var.gui.slider:SetValue(EasyBid.var.myBid)
+
+    EasyBid.var.gui.btnBid:SetDisabled(EasyBid.var.myBid < EasyBid.var.nextMinimum)
 end
 
 function EasyBid:SetNextMinimum()
@@ -586,7 +593,7 @@ function EasyBid:SetNextMinimum()
     EasyBid.var.nextMinimum = minimum
 
     if (EasyBid.var.myBid ~= nil and minimum ~= nil and EasyBid.var.gui.editBox ~= nil and EasyBid.var.myBid < minimum) then
-        EasyBid:setMyBid(minimum, null)
+        EasyBid:setMyBid(EasyBid.var.maxBidder.bid, null, true)
     end
 end
 
@@ -860,6 +867,8 @@ function EasyBid:StartGUI()
     EasyBid.var.gui.btnSetMaximum = btnSetMaximum
     EasyBid.var.gui.scrollContainer = scrollcontainer;
     EasyBid.var.gui.whisp = whisp;
+    EasyBid.var.gui.btnBid = btnBid;
+    EasyBid.var.gui.isBidMax = isBidMax;
 
     EasyBid:setMax();
 
