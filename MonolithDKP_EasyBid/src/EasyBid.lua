@@ -411,18 +411,18 @@ function EasyBid:FillBidders()
     for index, value in ipairs(EasyBid.var.bidders) do
         if (EasyBid.var.gui.scroll ~= nil) then
             local bidLabel = AceGUI:Create("Label")
-            bidLabel:SetWidth(50)
+            bidLabel:SetWidth(45)
             bidLabel:SetText(value.bid .. "   ")
             bidLabel.label:SetJustifyH("RIGHT")
 
             local playerLabel = AceGUI:Create("Label")
             playerLabel:SetColor(EasyBid:GetClassColor(value.player))
             playerLabel:SetText(value.player)
-            playerLabel:SetWidth(110)
+            playerLabel:SetWidth(105)
 
             local playerDkp = EasyBid:GetPlayerDkp(value.player);
             local maxLabel = AceGUI:Create("Label")
-            maxLabel:SetWidth(50)
+            maxLabel:SetWidth(45)
 
             if (playersAlreadyShown[value.player]) then
                 maxLabel:SetText("")
