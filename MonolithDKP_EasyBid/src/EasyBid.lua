@@ -443,13 +443,13 @@ function EasyBid:FillBidders()
                 end
             end
 
-            local group = AceGUI:Create("SimpleGroup")
-            group:SetRelativeWidth(1)
-            group:SetLayout("Flow")
+            local groupHistory = AceGUI:Create("SimpleGroup")
+            groupHistory:SetRelativeWidth(1)
+            groupHistory:SetLayout("Flow")
 
-            group:AddChild(bidLabel)
-            group:AddChild(playerLabel)
-            group:AddChild(maxLabel)
+            groupHistory:AddChild(bidLabel)
+            groupHistory:AddChild(playerLabel)
+            groupHistory:AddChild(maxLabel)
 
             playerLabel:ClearAllPoints()
             playerLabel:SetPoint("LEFT", bidLabel.frame, "RIGHT")
@@ -457,7 +457,7 @@ function EasyBid:FillBidders()
             maxLabel:ClearAllPoints()
             maxLabel:SetPoint("LEFT", playerLabel.frame, "RIGHT")
 
-            EasyBid.var.gui.scroll:AddChild(group)
+            EasyBid.var.gui.scroll:AddChild(groupHistory)
 
             playersAlreadyShown[value.player] = true
         end
@@ -1042,6 +1042,56 @@ function EasyBid:Table_Search(tar, val, field)
     end
 end
 
+function MonDKP_Profile_Create(player, dkp, gained, spent)
+	local tempName, tempClass
+	local guildSize = GetNumGuildMembers();
+	local class = "NONE"
+	local dkp = dkp or 0
+	local gained = gained or 0
+	local spent = spent or 0
+	local created = false
+
+	for i=1, guildSize do
+		tempName,_,_,_,_,_,_,_,_,_,tempClass = GetGuildRosterInfo(i)
+		tempName = strsub(tempName, 1, string.find(tempName, "-")-1)			-- required to remove server name from player (can remove in classic if this is not an issue)
+		if tempName == player then
+			class = tempClass
+			table.insert(MonDKP_EasyBid_DKPTable, { player=player, lifetime_spent=spent, lifetime_gained=gained, class=class, dkp=dkp, rank=10, spec="No Spec Reported", role="No Role Detected", rankName="None", previous_dkp=0, })
+
+			created = true
+			break
+		end
+	end
+
+	if not created and (IsInRaid() or IsInGroup()) then 	-- if player not found in guild, checks raid/party
+		local GroupSize
+
+		if IsInRaid() then
+			GroupSize = 40
+		elseif IsInGroup() then
+			GroupSize = 5
+		end
+
+		for i=1, GroupSize do
+			tempName,_,_,_,_,tempClass = GetRaidRosterInfo(i)
+			if tempName == player then
+				if not MonDKP:Table_Search(MonDKP_EasyBid_DKPTable, tempName, "player") then
+					tinsert(MonDKP_EasyBid_DKPTable, { player=player, class=tempClass, dkp=dkp, previous_dkp=0, lifetime_gained=gained, lifetime_spent=spent, rank=10, rankName="None", spec="No Spec Reported", role="No Role Detected", })
+					created = true
+					break
+				end
+			end
+		end
+	end
+
+	if not created then
+		tinsert(MonDKP_EasyBid_DKPTable, { player=player, class=class, dkp=dkp, previous_dkp=0, lifetime_gained=gained, lifetime_spent=spent, rank=10, rankName="None", spec="No Spec Reported", role="No Role Detected", })
+	end
+
+	return created
+end
+
+
 -- MonDKPCommand, StartBidTimer,20,[ItemLink] Min Bid: 10, 133768, RAID, Zeusovaneter
 -- MonDKPCommand, BidInfo,20,[ItemLink],10,133768, RAID, Zeusovaneter -- dloouhy ID je id ikony
 -- MonDKPCommand, BidInfo,[ItemLink2],10,133143, RAID, Zeusovaneter
@@ -1121,6 +1171,8 @@ function EasyBid:OnCommReceived(prefix, message, distribution, sender)
                                 local DKPTable = MonDKP_EasyBid_DKPTable[search[1][1]]
                                 DKPTable.dkp = DKPTable.dkp + deserialized.cost
                                 DKPTable.lifetime_spent = DKPTable.lifetime_spent + deserialized.cost
+                            else
+                                MonDKP_Profile_Create(deserialized.player, deserialized.cost, 0, deserialized.cost);
                             end
                         elseif prefix == "MonDKPDKPDist" then
                             local players = {strsplit(",", strsub(deserialized.players, 1, -2))}
@@ -1134,6 +1186,8 @@ function EasyBid:OnCommReceived(prefix, message, distribution, sender)
                                     if tonumber(dkp) > 0 then
                                         MonDKP_EasyBid_DKPTable[search[1][1]].lifetime_gained = MonDKP_EasyBid_DKPTable[search[1][1]].lifetime_gained + tonumber(dkp)
                                     end
+                                else
+                                    MonDKP_Profile_Create(players[i], tonumber(dkp), tonumber(dkp));	-- creates temp profile for data and requests additional data from online officers (hidden until data received)
                                 end
                             end
                         elseif prefix == "MonDKPDecay" then
@@ -1145,6 +1199,8 @@ function EasyBid:OnCommReceived(prefix, message, distribution, sender)
 
                                 if search then
                                     MonDKP_EasyBid_DKPTable[search[1][1]].dkp = MonDKP_EasyBid_DKPTable[search[1][1]].dkp + tonumber(dkp[i])
+                                else
+                                    MonDKP_Profile_Create(players[i], tonumber(dkp[i]));	-- creates temp profile for data and requests additional data from online officers (hidden until data received)
                                 end
                             end
                         elseif prefix == "MonDKPDelLoot" then
@@ -1159,6 +1215,8 @@ function EasyBid:OnCommReceived(prefix, message, distribution, sender)
                             if search_player then
                                 MonDKP_EasyBid_DKPTable[search_player[1][1]].dkp = MonDKP_EasyBid_DKPTable[search_player[1][1]].dkp + deserialized.cost                  -- refund previous looter
                                 MonDKP_EasyBid_DKPTable[search_player[1][1]].lifetime_spent = MonDKP_EasyBid_DKPTable[search_player[1][1]].lifetime_spent + deserialized.cost       -- remove from lifetime_spent
+                            else
+                                MonDKP_Profile_Create(deserialized.player, deserialized.cost, 0, deserialized.cost);	-- creates temp profile for data and requests additional data from online officers (hidden until data received)
                             end
                         elseif prefix == "MonDKPDelSync" then
                             local players = {strsplit(",", strsub(deserialized.players, 1, -2))}   -- cuts off last "," from string to avoid creating an empty value
@@ -1178,6 +1236,8 @@ function EasyBid:OnCommReceived(prefix, message, distribution, sender)
 
                                     if search2 then
                                         MonDKP_EasyBid_DKPTable[search2[1][1]].dkp = MonDKP_EasyBid_DKPTable[search2[1][1]].dkp + tonumber(dkp[i])
+                                    else
+                                        MonDKP_Profile_Create(players[i], tonumber(dkp[i]));	-- creates temp profile for data and requests additional data from online officers (hidden until data received)
                                     end
                                 else
                                     local search2 = EasyBid:Table_Search(MonDKP_EasyBid_DKPTable, players[i], "player")
@@ -1188,10 +1248,63 @@ function EasyBid:OnCommReceived(prefix, message, distribution, sender)
                                         if tonumber(dkp) < 0 then
                                             MonDKP_EasyBid_DKPTable[search2[1][1]].lifetime_gained = MonDKP_EasyBid_DKPTable[search2[1][1]].lifetime_gained + tonumber(dkp)
                                         end
+                                    else
+                                        local gained;
+                                        if tonumber(dkp) < 0 then gained = tonumber(dkp) else gained = 0 end
+                                        MonDKP_Profile_Create(players[i], tonumber(dkp), gained);	-- creates temp profile for data and requests additional data from online officers (hidden until data received)
                                     end
                                 end
                             end
                         elseif prefix == "MonDKPMerge" then
+                            for i=1, #deserialized.DKP do
+                                local players = {strsplit(",", strsub(deserialized.DKP[i].players, 1, -2))}
+                                local dkp
+
+                                if strfind(deserialized.DKP[i].dkp, "%-%d*%.?%d+%%") then
+                                    dkp = {strsplit(",", deserialized.DKP[i].dkp)}
+                                end
+
+                                for j=1, #players do
+                                    if players[j] then
+                                        local findEntry = MonDKP:Table_Search(MonDKP_EasyBid_DKPTable, players[j], "player")
+
+                                        if strfind(deserialized.DKP[i].dkp, "%-%d*%.?%d+%%") then 		-- handles decay entries
+                                            if findEntry then
+                                                MonDKP_EasyBid_DKPTable[findEntry[1][1]].dkp = MonDKP_EasyBid_DKPTable[findEntry[1][1]].dkp + tonumber(dkp[j])
+                                            else
+                                                MonDKP_Profile_Create(players[j], tonumber(dkp[j]))
+                                            end
+                                        else
+                                            if findEntry then
+                                                MonDKP_EasyBid_DKPTable[findEntry[1][1]].dkp = MonDKP_EasyBid_DKPTable[findEntry[1][1]].dkp + tonumber(deserialized.DKP[i].dkp)
+                                                if (tonumber(deserialized.DKP[i].dkp) > 0 and not deserialized.DKP[i].deletes) or (tonumber(deserialized.DKP[i].dkp) < 0 and deserialized.DKP[i].deletes) then -- adjust lifetime if it's a DKP gain or deleting a DKP gain
+                                                    MonDKP_EasyBid_DKPTable[findEntry[1][1]].lifetime_gained = MonDKP_EasyBid_DKPTable[findEntry[1][1]].lifetime_gained + deserialized.DKP[i].dkp 	-- NOT if it's a DKP penalty or deleteing a DKP penalty
+                                                end
+                                            else
+                                                local class
+
+                                                if (tonumber(deserialized.DKP[i].dkp) > 0 and not deserialized.DKP[i].deletes) or (tonumber(deserialized.DKP[i].dkp) < 0 and deserialized.DKP[i].deletes) then
+                                                    MonDKP_Profile_Create(players[j], tonumber(deserialized.DKP[i].dkp), tonumber(deserialized.DKP[i].dkp))
+                                                else
+                                                    MonDKP_Profile_Create(players[j], tonumber(deserialized.DKP[i].dkp))
+                                                end
+                                            end
+                                        end
+                                    end
+                                end
+                            end
+
+                            for i=1, #deserialized.Loot do
+                                local findEntry = MonDKP:Table_Search(MonDKP_EasyBid_DKPTable, deserialized.Loot[i].player, "player")
+
+                                if findEntry then
+                                    MonDKP_EasyBid_DKPTable[findEntry[1][1]].dkp = MonDKP_EasyBid_DKPTable[findEntry[1][1]].dkp + deserialized.Loot[i].cost
+                                    MonDKP_EasyBid_DKPTable[findEntry[1][1]].lifetime_spent = MonDKP_EasyBid_DKPTable[findEntry[1][1]].lifetime_spent + deserialized.Loot[i].cost
+                                else
+                                    MonDKP_Profile_Create(deserialized.Loot[i].player, deserialized.Loot[i].cost, 0, deserialized.Loot[i].cost)
+                                end
+                            end
+
                             for i=1, #MonDKP_EasyBid_DKPTable do
                                 if MonDKP_EasyBid_DKPTable[i].class == "NONE" then
                                     local search = EasyBid:Table_Search(deserialized.Profiles, MonDKP_EasyBid_DKPTable[i].player, "player")
