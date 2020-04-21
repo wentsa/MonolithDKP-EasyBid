@@ -1075,7 +1075,7 @@ function MonDKP_Profile_Create(player, dkp, gained, spent)
 		for i=1, GroupSize do
 			tempName,_,_,_,_,tempClass = GetRaidRosterInfo(i)
 			if tempName == player then
-				if not MonDKP:Table_Search(MonDKP_EasyBid_DKPTable, tempName, "player") then
+				if not EasyBid:Table_Search(MonDKP_EasyBid_DKPTable, tempName, "player") then
 					tinsert(MonDKP_EasyBid_DKPTable, { player=player, class=tempClass, dkp=dkp, previous_dkp=0, lifetime_gained=gained, lifetime_spent=spent, rank=10, rankName="None", spec="No Spec Reported", role="No Role Detected", })
 					created = true
 					break
@@ -1113,15 +1113,7 @@ function EasyBid:OnCommReceived(prefix, message, distribution, sender)
             if (prefix == "MonDKPCommand") then
                 local command, arg1, arg2, arg3, arg4 = strsplit(",", message);
                 if sender ~= UnitName("player") then
-                    if command == "StartTimer" then
-                        --                        MonDKP:StartTimer(arg1, arg2)
-                    elseif command == "StartBidTimer" then
-                        --                        MonDKP:StartBidTimer(arg1, arg2, arg3)
-                        --                        core.BiddingInProgress = true;
-                        --                        if strfind(arg1, "{") then
-                        --                            MonDKP:Print("Bid timer extended by "..tonumber(strsub(arg1, strfind(arg1, "{")+1)).." seconds.")
-                        --                        end
-                    elseif command == "StopBidTimer" then
+                    if command == "StopBidTimer" then
                         EasyBid:HideBiddingFrame()
 
                         EasyBid.var.minimumBid = nil;
@@ -1266,7 +1258,7 @@ function EasyBid:OnCommReceived(prefix, message, distribution, sender)
 
                                 for j=1, #players do
                                     if players[j] then
-                                        local findEntry = MonDKP:Table_Search(MonDKP_EasyBid_DKPTable, players[j], "player")
+                                        local findEntry = EasyBid:Table_Search(MonDKP_EasyBid_DKPTable, players[j], "player")
 
                                         if strfind(deserialized.DKP[i].dkp, "%-%d*%.?%d+%%") then 		-- handles decay entries
                                             if findEntry then
@@ -1295,7 +1287,7 @@ function EasyBid:OnCommReceived(prefix, message, distribution, sender)
                             end
 
                             for i=1, #deserialized.Loot do
-                                local findEntry = MonDKP:Table_Search(MonDKP_EasyBid_DKPTable, deserialized.Loot[i].player, "player")
+                                local findEntry = EasyBid:Table_Search(MonDKP_EasyBid_DKPTable, deserialized.Loot[i].player, "player")
 
                                 if findEntry then
                                     MonDKP_EasyBid_DKPTable[findEntry[1][1]].dkp = MonDKP_EasyBid_DKPTable[findEntry[1][1]].dkp + deserialized.Loot[i].cost
