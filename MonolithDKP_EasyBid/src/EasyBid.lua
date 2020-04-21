@@ -30,6 +30,7 @@ EasyBid.var = {
     maxBidValue = nil,
     bidStep = 10,
     lastOfficerWhisper = nil,
+    isEditing = false,
 }
 
 local weaponItemType = 2;
@@ -572,26 +573,34 @@ function EasyBid:normalizeBid(value)
     return nil
 end
 
-function EasyBid:setMyBid(value, change, force)
-    local max = EasyBid:GetActualMax();
+function EasyBid:setMyBid(value, change, byNewBidder)
+    if (not EasyBid.var.isEditing) then
+        local newValue;
+        if (value ~= nil) then
+            newValue = value
+        elseif (change ~= nil) then
+            newValue = EasyBid.var.myBid + change
+        end
 
-    if (value ~= nil) then
-        EasyBid.var.myBid = value
-    elseif (change ~= nil) then
-        EasyBid.var.myBid = EasyBid.var.myBid + change
+        if (byNewBidder and newValue < EasyBid.var.myBid) then
+            return
+        end
+
+        EasyBid.var.myBid = newValue;
+
+        if (not byNewBidder) then
+            local max = EasyBid:GetActualMax();
+            EasyBid.var.myBid = EasyBid:normalizeBid(EasyBid.var.myBid)
+
+            EasyBid.var.myBid = math.max(EasyBid.var.myBid, EasyBid.var.nextMinimum);
+            EasyBid.var.myBid = math.min(EasyBid.var.myBid, EasyBid:normalizeBid(max));
+        end
+
+        EasyBid.var.gui.editBox:SetText(tostring(EasyBid.var.myBid))
+        EasyBid.var.gui.slider:SetValue(EasyBid.var.myBid)
+
+        EasyBid.var.gui.btnBid:SetDisabled(EasyBid.var.myBid < EasyBid.var.nextMinimum)
     end
-
-    if (not force) then
-        EasyBid.var.myBid = EasyBid:normalizeBid(EasyBid.var.myBid)
-
-        EasyBid.var.myBid = math.max(EasyBid.var.myBid, EasyBid.var.nextMinimum);
-        EasyBid.var.myBid = math.min(EasyBid.var.myBid, EasyBid:normalizeBid(max));
-    end
-
-    EasyBid.var.gui.editBox:SetText(tostring(EasyBid.var.myBid))
-    EasyBid.var.gui.slider:SetValue(EasyBid.var.myBid)
-
-    EasyBid.var.gui.btnBid:SetDisabled(EasyBid.var.myBid < EasyBid.var.nextMinimum)
 end
 
 function EasyBid:SetNextMinimum()
@@ -710,12 +719,20 @@ function EasyBid:StartGUI()
 
     local editbox = AceGUI:Create("EditBox")
     editbox:SetText(tostring(EasyBid.var.minimumBid))
---    editbox:SetLabel("Insert text:")
+
     editbox:SetWidth(100)
     local Path, Size, Flags = editbox.editbox:GetFont()
     editbox.editbox:SetFont(Path, 20, Flags);
---    editbox.label:Release()
-    editbox:SetCallback("OnEnterPressed", function(widget, event, text) EasyBid:setMyBid(text, nil) end)
+
+    editbox:SetCallback(
+            "OnEnterPressed",
+            function(widget, event, text)
+                AceGUI:ClearFocus();
+                EasyBid:setMyBid(text, nil)
+            end
+    )
+    editbox.editbox:HookScript("OnEditFocusLost", function() EasyBid.var.isEditing = false end)
+    editbox.editbox:HookScript("OnEditFocusGained", function() EasyBid.var.isEditing = true end)
 
     local btnBid = AceGUI:Create("Button")
     btnBid:SetText("BID")
