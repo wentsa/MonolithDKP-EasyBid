@@ -1,7 +1,7 @@
 ## Interface: 11304
 ## Title: Monolith DKP EasyBid
 ## Notes: Frame for easy bidding with Monolith DKP
-## Version: 1.0.4
+## Version: 1.0.5
 ## X-MonolithDKPVersion: 2.1.2
 
 ## OptionalDeps: MonolithDKP
