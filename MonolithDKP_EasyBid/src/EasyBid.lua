@@ -1265,55 +1265,7 @@ function EasyBid:OnCommReceived(prefix, message, distribution, sender)
                                 end
                             end
                         elseif prefix == "MonDKPMerge" then
-                            for i=1, #deserialized.DKP do
-                                local players = {strsplit(",", strsub(deserialized.DKP[i].players, 1, -2))}
-                                local dkp
-
-                                if strfind(deserialized.DKP[i].dkp, "%-%d*%.?%d+%%") then
-                                    dkp = {strsplit(",", deserialized.DKP[i].dkp)}
-                                end
-
-                                for j=1, #players do
-                                    if players[j] then
-                                        local findEntry = EasyBid:Table_Search(MonDKP_EasyBid_DKPTable, players[j], "player")
-
-                                        if strfind(deserialized.DKP[i].dkp, "%-%d*%.?%d+%%") then 		-- handles decay entries
-                                            if findEntry then
-                                                MonDKP_EasyBid_DKPTable[findEntry[1][1]].dkp = MonDKP_EasyBid_DKPTable[findEntry[1][1]].dkp + tonumber(dkp[j])
-                                            else
-                                                MonDKP_Profile_Create(players[j], tonumber(dkp[j]))
-                                            end
-                                        else
-                                            if findEntry then
-                                                MonDKP_EasyBid_DKPTable[findEntry[1][1]].dkp = MonDKP_EasyBid_DKPTable[findEntry[1][1]].dkp + tonumber(deserialized.DKP[i].dkp)
-                                                if (tonumber(deserialized.DKP[i].dkp) > 0 and not deserialized.DKP[i].deletes) or (tonumber(deserialized.DKP[i].dkp) < 0 and deserialized.DKP[i].deletes) then -- adjust lifetime if it's a DKP gain or deleting a DKP gain
-                                                    MonDKP_EasyBid_DKPTable[findEntry[1][1]].lifetime_gained = MonDKP_EasyBid_DKPTable[findEntry[1][1]].lifetime_gained + deserialized.DKP[i].dkp 	-- NOT if it's a DKP penalty or deleteing a DKP penalty
-                                                end
-                                            else
-                                                local class
-
-                                                if (tonumber(deserialized.DKP[i].dkp) > 0 and not deserialized.DKP[i].deletes) or (tonumber(deserialized.DKP[i].dkp) < 0 and deserialized.DKP[i].deletes) then
-                                                    MonDKP_Profile_Create(players[j], tonumber(deserialized.DKP[i].dkp), tonumber(deserialized.DKP[i].dkp))
-                                                else
-                                                    MonDKP_Profile_Create(players[j], tonumber(deserialized.DKP[i].dkp))
-                                                end
-                                            end
-                                        end
-                                    end
-                                end
-                            end
-
-                            for i=1, #deserialized.Loot do
-                                local findEntry = EasyBid:Table_Search(MonDKP_EasyBid_DKPTable, deserialized.Loot[i].player, "player")
-
-                                if findEntry then
-                                    MonDKP_EasyBid_DKPTable[findEntry[1][1]].dkp = MonDKP_EasyBid_DKPTable[findEntry[1][1]].dkp + deserialized.Loot[i].cost
-                                    MonDKP_EasyBid_DKPTable[findEntry[1][1]].lifetime_spent = MonDKP_EasyBid_DKPTable[findEntry[1][1]].lifetime_spent + deserialized.Loot[i].cost
-                                else
-                                    MonDKP_Profile_Create(deserialized.Loot[i].player, deserialized.Loot[i].cost, 0, deserialized.Loot[i].cost)
-                                end
-                            end
-
+                            -- TODO mozna pridat MonDKP_DKPHistory, loot a archive
                             for i=1, #MonDKP_EasyBid_DKPTable do
                                 if MonDKP_EasyBid_DKPTable[i].class == "NONE" then
                                     local search = EasyBid:Table_Search(deserialized.Profiles, MonDKP_EasyBid_DKPTable[i].player, "player")
