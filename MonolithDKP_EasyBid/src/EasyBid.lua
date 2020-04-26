@@ -13,8 +13,7 @@ EasyBid.var = {
         editBox = nil,
         slider = nil,
         currentItem = nil,
-        highestBidder = nil,
-        highestBid = nil,
+        groupBidder = nil,
         isVisible = false,
         scrollContainer = nil,
         whisp = nil,
@@ -473,13 +472,60 @@ function EasyBid:FillBidders()
         EasyBid.var.gui.scrollContainer:SetTitle("History (" .. tostring(biddersNumber) .. " bidders)")
     end
 
-    if (EasyBid.var.gui.highestBidder ~= nil and EasyBid.var.gui.highestBid ~= nil) then
-        local highestBidderText;
-        local highestBid;
+    if (EasyBid.var.gui.groupBidder ~= nil) then
+        local highestBid = AceGUI:Create("Label")
+        local Path, Size, Flags = highestBid.label:GetFont()
+        highestBid.label:SetFont(Path, 28, Flags);
+        highestBid:SetRelativeWidth(0.3)
+
+        local highestBidder = AceGUI:Create("Label")
+        local Path, Size, Flags = highestBidder.label:GetFont()
+        highestBidder.label:SetFont(Path, 28, Flags);
+        highestBidder:SetRelativeWidth(0.7)
+
+        local cancelBid = nil
+
         if (EasyBid.var.maxBidder ~= nil and EasyBid.var.maxBidder.bid > 0 and EasyBid.var.maxBidder.player ~= nil) then
-            EasyBid.var.gui.highestBid:SetText(EasyBid.var.maxBidder.bid)
-            EasyBid.var.gui.highestBidder:SetText(EasyBid.var.maxBidder.player)
-            EasyBid.var.gui.highestBidder:SetColor(EasyBid:GetClassColor(EasyBid.var.maxBidder.player))
+            highestBid:SetText(EasyBid.var.maxBidder.bid)
+
+            if (EasyBid.var.maxBidder.player == UnitName("player")) then
+                cancelBid = AceGUI:Create("Button")
+                cancelBid:SetWidth(40)
+                cancelBid:SetText("X")
+                cancelBid:SetCallback("OnClick", function()
+                    if (EasyBid.var.bidOfficer ~= nil) then
+                        SendChatMessage("!bid cancel", "WHISPER", nil, EasyBid.var.bidOfficer);
+                    else
+                        SendChatMessage("!bid cancel", "RAID");
+                    end
+                end)
+
+                local tooltip = GameTooltip;
+                cancelBid:SetCallback("OnEnter", function(widget)
+                    if (tooltip ~= nil) then
+                        tooltip:ClearLines();
+                        tooltip:SetOwner(cancelBid.frame, "ANCHOR_NONE")
+                        tooltip:ClearAllPoints()
+                        tooltip:SetPoint("BOTTOMLEFT", cancelBid.frame, "TOPLEFT")
+                        tooltip:SetText("Cancel bid");
+                        tooltip:Show();
+                    end
+                end);
+                cancelBid:SetCallback("OnLeave", function()
+                    if (tooltip ~= nil) then
+                        tooltip:Hide()
+                    end
+                end);
+
+
+                highestBidder:SetRelativeWidth(0.5)
+
+                highestBidder:SetText(" - YOU -")
+                highestBidder:SetColor(1, 1, 1)
+            else
+                highestBidder:SetText(EasyBid.var.maxBidder.player)
+                highestBidder:SetColor(EasyBid:GetClassColor(EasyBid.var.maxBidder.player))
+            end
 
             local maxBidderDkp = EasyBid:GetPlayerDkp(EasyBid.var.maxBidder.player);
             local isHisMax = maxBidderDkp ~= MAXIMUM and maxBidderDkp == EasyBid.var.maxBidder.bid;
@@ -490,10 +536,38 @@ function EasyBid:FillBidders()
                 EasyBid.var.gui.isBidMax:SetText("")
             end
         else
-            EasyBid.var.gui.highestBid:SetText("0")
-            EasyBid.var.gui.highestBidder:SetText("- NO BIDDER -")
-            EasyBid.var.gui.highestBidder:SetColor(0.7, 0.7, 0.7)
+            highestBid:SetText("0")
+            highestBidder:SetText("- NO BIDDER -")
+            highestBidder:SetColor(0.7, 0.7, 0.7)
             EasyBid.var.gui.isBidMax:SetText("")
+        end
+
+        EasyBid.var.gui.groupBidder:ReleaseChildren();
+
+        EasyBid.var.gui.groupBidder:AddChild(highestBid)
+        if (cancelBid ~= nil) then
+            EasyBid.var.gui.groupBidder:AddChild(cancelBid)
+            cancelBid:ClearAllPoints()
+            cancelBid:SetPoint("LEFT", highestBid.frame, "RIGHT")
+        end
+        EasyBid.var.gui.groupBidder:AddChild(highestBidder)
+
+        highestBidder:ClearAllPoints()
+        if (cancelBid ~= nil) then
+            highestBidder:SetPoint("LEFT", cancelBid.frame, "RIGHT", 30, 0)
+
+            local ag = highestBidder.frame:CreateAnimationGroup()
+
+            ag:SetLooping("BOUNCE")
+            local a4 = ag:CreateAnimation("Alpha")
+            a4:SetFromAlpha(1)
+            a4:SetToAlpha(0.75)
+            a4:SetDuration(0.25)
+            a4:SetSmoothing("IN_OUT")
+
+            ag:Play()
+        else
+            highestBidder:SetPoint("LEFT", highestBid.frame, "RIGHT")
         end
     end
 
@@ -703,16 +777,6 @@ function EasyBid:StartGUI()
     local Path, Size, Flags = currentItem.label:GetFont()
     currentItem.label:SetFont(Path, 20, Flags);
 
-    local highestBid = AceGUI:Create("Label")
-    local Path, Size, Flags = highestBid.label:GetFont()
-    highestBid.label:SetFont(Path, 28, Flags);
-    highestBid:SetRelativeWidth(0.3)
-
-    local highestBidder = AceGUI:Create("Label")
-    local Path, Size, Flags = highestBidder.label:GetFont()
-    highestBidder.label:SetFont(Path, 28, Flags);
-    highestBidder:SetRelativeWidth(0.7)
-
     local isBidMax = AceGUI:Create("Label")
     local Path, Size, Flags = isBidMax.label:GetFont()
     isBidMax.label:SetFont(Path, 10, Flags);
@@ -841,9 +905,6 @@ function EasyBid:StartGUI()
     groupBidder:SetRelativeWidth(1)
     groupBidder:SetLayout("Flow")
 
-    groupBidder:AddChild(highestBid)
-    groupBidder:AddChild(highestBidder)
-
     local groupBid = AceGUI:Create("SimpleGroup")
     groupBid:SetRelativeWidth(1)
     groupBid:SetLayout("Flow")
@@ -893,8 +954,7 @@ function EasyBid:StartGUI()
     EasyBid.var.gui.slider = minBidSlider
     EasyBid.var.gui.currentItem = currentItem
     EasyBid.var.gui.scroll = scroll;
-    EasyBid.var.gui.highestBidder = highestBidder;
-    EasyBid.var.gui.highestBid = highestBid;
+    EasyBid.var.gui.groupBidder = groupBidder;
     EasyBid.var.gui.btnSetHalf = btnSetHalf
     EasyBid.var.gui.btnSetMaximum = btnSetMaximum
     EasyBid.var.gui.scrollContainer = scrollcontainer;
@@ -932,9 +992,6 @@ function EasyBid:StartGUI()
 
     whisp:ClearAllPoints()
     whisp:SetPoint("TOPLEFT", groupSet.frame, "BOTTOMLEFT", 0, -15);
-
-    highestBidder:ClearAllPoints()
-    highestBidder:SetPoint("LEFT", highestBid.frame, "RIGHT")
 
     checkMax:ClearAllPoints()
     checkMax:SetPoint("BOTTOMLEFT", frame.frame, "BOTTOMLEFT", 20, 40)
