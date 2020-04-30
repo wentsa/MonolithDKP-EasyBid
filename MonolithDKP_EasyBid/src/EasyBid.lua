@@ -411,18 +411,18 @@ function EasyBid:FillBidders()
 
     for index, value in ipairs(EasyBid.var.bidders) do
         if (EasyBid.var.gui.scroll ~= nil) then
-            local bidLabel = AceGUI:Create("Label")
+            local bidLabel = EasyBid:createLabel()
             bidLabel:SetWidth(45)
             bidLabel:SetText(value.bid .. "   ")
             bidLabel.label:SetJustifyH("RIGHT")
 
-            local playerLabel = AceGUI:Create("Label")
+            local playerLabel = EasyBid:createLabel()
             playerLabel:SetColor(EasyBid:GetClassColor(value.player))
             playerLabel:SetText(value.player)
             playerLabel:SetWidth(105)
 
             local playerDkp = EasyBid:GetPlayerDkp(value.player);
-            local maxLabel = AceGUI:Create("Label")
+            local maxLabel = EasyBid:createLabel()
             maxLabel:SetWidth(45)
 
             if (playersAlreadyShown[value.player]) then
@@ -473,12 +473,12 @@ function EasyBid:FillBidders()
     end
 
     if (EasyBid.var.gui.groupBidder ~= nil) then
-        local highestBid = AceGUI:Create("Label")
+        local highestBid = EasyBid:createLabel()
         local Path, Size, Flags = highestBid.label:GetFont()
         highestBid.label:SetFont(Path, 28, Flags);
         highestBid:SetRelativeWidth(0.3)
 
-        local highestBidder = AceGUI:Create("Label")
+        local highestBidder = EasyBid:createLabel()
         local Path, Size, Flags = highestBidder.label:GetFont()
         highestBidder.label:SetFont(Path, 28, Flags);
         highestBidder:SetRelativeWidth(0.7)
@@ -598,25 +598,26 @@ function EasyBid:OnWhisperMessage(self, message, author)
 end
 
 function EasyBid:OnMessage(self, message, author)
-    if(string.find(message, "ebid") ~= nil) then
-        local t = {}
-        for i in string.gmatch(message, "[^%s]+") do
-            t[#t + 1] = i
-        end
-
-        if (t[2] == "start") then
-            local itemId = t[3];
-            local minBid = t[4];
-            EasyBid:SendData("MonDKPCommand", "BidInfo,"..itemId..","..minBid..","..",")
-        elseif(t[2] == "bid") then
-            local player = t[3];
-            local dkp = tonumber(t[4]);
-            table.insert(Bids_Submitted, {player=player, dkp=dkp})
-            EasyBid:SendData("MonDKPBidShare", Bids_Submitted)
-        elseif(t[2] == "stop") then
-            EasyBid:SendData("MonDKPCommand", "StopBidTimer")
-        end
-    elseif(
+    --if(string.find(message, "ebid") ~= nil) then
+    --    local t = {}
+    --    for i in string.gmatch(message, "[^%s]+") do
+    --        t[#t + 1] = i
+    --    end
+    --
+    --    if (t[2] == "start") then
+    --        local itemId = t[3];
+    --        local minBid = t[4];
+    --        EasyBid:SendData("MonDKPCommand", "BidInfo,"..itemId..","..minBid..","..",")
+    --    elseif(t[2] == "bid") then
+    --        local player = t[3];
+    --        local dkp = tonumber(t[4]);
+    --        table.insert(Bids_Submitted, {player=player, bid=dkp})
+    --        EasyBid:SendData("MonDKPBidShare", Bids_Submitted)
+    --    elseif(t[2] == "stop") then
+    --        EasyBid:SendData("MonDKPCommand", "StopBidTimer")
+    --    end
+    --else
+    if(
         string.find(message, "Bidding Closed!") ~= nil and
         (
             EasyBid.var.bidOfficer ~= nil and (
@@ -640,8 +641,10 @@ end
 function EasyBid:normalizeBid(value)
     if (value ~= nil) then
         local parsed = tonumber(value)
-        parsed = parsed - ((parsed - EasyBid.var.minimumBid) % EasyBid.var.bidStep)
-        return parsed
+        if (parsed ~= nil) then
+            parsed = parsed - ((parsed - EasyBid.var.minimumBid) % EasyBid.var.bidStep)
+            return parsed
+        end
     end
 
     return nil
@@ -792,7 +795,11 @@ function EasyBid:StartGUI()
             "OnEnterPressed",
             function(widget, event, text)
                 AceGUI:ClearFocus();
-                EasyBid:setMyBid(text, nil)
+                if (text ~= nil and tonumber(text) ~= nil) then
+                    EasyBid:setMyBid(text, nil)
+                else
+                    EasyBid:setMyBid(EasyBid.var.myBid, nil)
+                end
             end
     )
     editbox.editbox:HookScript("OnEditFocusLost", function() EasyBid.var.isEditing = false end)
@@ -1416,5 +1423,128 @@ function EasyBid:HSVtoRGB(h, s, v)
     elseif(i == 5) then
         return v, p, q;
     end
+end
+
+-- creates AceGUI-like widget that is not pooled
+function EasyBid:createLabel()
+    local frame = CreateFrame("Frame", nil, UIParent)
+    frame:Hide()
+
+    local label = frame:CreateFontString(nil, "BACKGROUND", "GameFontHighlightSmall")
+
+    -- create widget
+    local widget = {
+        label = label,
+        frame = frame,
+        type = "LabelEasyBid",
+    }
+
+    function update(self)
+        if self.resizing then return end
+        local width = self.frame.width or self.frame:GetWidth() or 0
+        local height
+
+        self.label:ClearAllPoints()
+
+        self.label:SetPoint("TOPLEFT")
+        self.label:SetWidth(width)
+        height = self.label:GetStringHeight()
+
+        -- avoid zero-height labels, since they can used as spacers
+        if not height or height == 0 then
+            height = 1
+        end
+
+        self.resizing = true
+        self.frame:SetHeight(height)
+        self.frame.height = height
+        self.resizing = nil
+    end
+
+    widget["SetText"] = function(self, text)
+        self.label:SetText(text)
+        update(self)
+    end
+
+    widget["SetColor"] = function(self, r, g, b)
+        if not (r and g and b) then
+            r, g, b = 1, 1, 1
+        end
+        self.label:SetVertexColor(r, g, b)
+    end
+
+    widget["OnWidthSet"] = function(self, width)
+        update(self)
+    end
+
+    widget["SetWidth"] = function(self, width)
+        self.frame:SetWidth(width)
+        self.frame.width = width
+        if self.OnWidthSet then
+            self:OnWidthSet(width)
+        end
+    end
+
+    widget["SetParent"] = function(self, parent)
+        self.frame:SetParent(nil)
+        self.frame:SetParent(parent.content)
+        self.parent = parent
+    end
+
+    widget["ClearAllPoints"] = function(self)
+        return self.frame:ClearAllPoints()
+    end
+
+    widget["SetPoint"] = function(self, ...)
+        return self.frame:SetPoint(...)
+    end
+
+    widget["SetRelativeWidth"] = function(self, width)
+        if width <= 0 or width > 1 then
+            error(":SetRelativeWidth(width): Invalid relative width.", 2)
+        end
+        self.relWidth = width
+        self.width = "relative"
+    end
+
+    widget["Fire"] = function(self, name, ...)
+        if self.events[name] then
+            local success, ret = safecall(self.events[name], self, name, ...)
+            if success then
+                return ret
+            end
+        end
+    end
+
+    -- registerAsWidget
+    widget.userdata = {}
+    widget.events = {}
+    --widget.base = WidgetBase
+    widget.frame.obj = widget
+    --widget.frame:SetScript("OnSizeChanged", FrameResize)
+    --setmetatable(widget, {__index = WidgetBase})
+    --return widget
+
+    -- OnAcquire
+    widget.resizing = true
+    -- height is set dynamically by the text and image size
+    widget:SetWidth(200)
+    widget:SetText()
+    widget:SetColor()
+
+    label:SetFont(GameFontHighlightSmall:GetFont())
+    label:SetJustifyH("LEFT")
+    label:SetJustifyV("TOP")
+
+    -- reset the flag
+    widget.resizing = nil
+    -- run the update explicitly
+    update(widget)
+
+    widget.LayoutFunc = AceGUI:GetLayout("List")
+    widget.LayoutPaused = nil
+
+    return widget
+
 end
 
