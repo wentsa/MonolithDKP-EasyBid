@@ -219,6 +219,8 @@ function EasyBid:OnInitialize()
     AceConfig:RegisterOptionsTable("EasyBid", EasyBid.Options)
     AceConfigDialog:AddToBlizOptions("EasyBid", "MonDKP Easy Bid")
 
+    GuildRoster();
+
     EasyBidSettings.initialized = true
 
     EasyBid:Print("EASY BID INITIALIZED")
@@ -411,6 +413,23 @@ function EasyBid:FillCurrentItemAndPossiblyShow()
     return false
 end
 
+function EasyBid:GetGuildRank(player)
+    local name, rank, rankIndex;
+    local guildSize;
+
+    if IsInGuild() then
+        guildSize = GetNumGuildMembers();
+        for i=1, guildSize do
+            name, rank, rankIndex = GetGuildRosterInfo(i)
+            name = strsub(name, 1, string.find(name, "-")-1)  -- required to remove server name from player (can remove in classic if this is not an issue)
+            if name == player then
+                return rank, rankIndex;
+            end
+        end
+    end
+    return nil
+end
+
 
 function EasyBid:FillBidders()
     EasyBid.var.maxBidder = nil;
@@ -481,6 +500,38 @@ function EasyBid:FillBidders()
             maxLabel:ClearAllPoints()
             maxLabel:SetPoint("LEFT", playerLabel.frame, "RIGHT")
 
+            local guildName, guildRankName, guildRankIndex = GetGuildInfo(value.player)
+            if (guildName == nil) then
+                local rank, rankIdx = EasyBid:GetGuildRank(value.player);
+                if (rank ~= nil) then
+                    guildName = GetGuildInfo("player")
+                    guildRankName = rank
+                    guildRankIndex = rankIdx
+                end
+            end
+
+
+            local tooltip = GameTooltip;
+            playerLabel:SetCallback("OnEnter", function(widget)
+                if (tooltip ~= nil) then
+                    tooltip:ClearLines();
+                    tooltip:SetOwner(playerLabel.frame, "ANCHOR_NONE")
+                    tooltip:ClearAllPoints()
+                    tooltip:SetPoint("TOPLEFT", playerLabel.frame, "BOTTOMLEFT")
+                    tooltip:AddLine(value.player, 1, 1, 1)
+                    if (guildName ~= nil) then
+                        tooltip:AddLine("<" .. guildName .. ">", 0.1, 0.8, 0.15, 0.5)
+                        tooltip:AddLine(guildRankName .. " (" .. guildRankIndex .. ")")
+                    end
+                    tooltip:Show();
+                end
+            end);
+            playerLabel:SetCallback("OnLeave", function()
+                if (tooltip ~= nil) then
+                    tooltip:Hide()
+                end
+            end);
+
             EasyBid.var.gui.scroll:AddChild(groupHistory)
 
             playersAlreadyShown[value.player] = true
@@ -549,6 +600,37 @@ function EasyBid:FillBidders()
             else
                 highestBidder:SetText(EasyBid.var.maxBidder.player)
                 highestBidder:SetColor(EasyBid:GetClassColor(EasyBid.var.maxBidder.player))
+
+                local guildName, guildRankName, guildRankIndex = GetGuildInfo(EasyBid.var.maxBidder.player)
+                if (guildName == nil) then
+                    local rank, rankIdx = EasyBid:GetGuildRank(EasyBid.var.maxBidder.player);
+                    if (rank ~= nil) then
+                        guildName = GetGuildInfo("player")
+                        guildRankName = rank
+                        guildRankIndex = rankIdx
+                    end
+                end
+
+                local tooltip = GameTooltip;
+                highestBidder:SetCallback("OnEnter", function(widget)
+                    if (tooltip ~= nil) then
+                        tooltip:ClearLines();
+                        tooltip:SetOwner(highestBidder.frame, "ANCHOR_NONE")
+                        tooltip:ClearAllPoints()
+                        tooltip:SetPoint("TOPLEFT", highestBidder.frame, "BOTTOMLEFT")
+                        tooltip:AddLine(EasyBid.var.maxBidder.player, 1, 1, 1)
+                        if (guildName ~= nil) then
+                            tooltip:AddLine("<" .. guildName .. ">", 0.1, 0.8, 0.15, 0.5)
+                            tooltip:AddLine(guildRankName .. " (" .. guildRankIndex .. ")")
+                        end
+                        tooltip:Show();
+                    end
+                end);
+                highestBidder:SetCallback("OnLeave", function()
+                    if (tooltip ~= nil) then
+                        tooltip:Hide()
+                    end
+                end);
             end
 
             local maxBidderDkp = EasyBid:GetPlayerDkp(EasyBid.var.maxBidder.player);
