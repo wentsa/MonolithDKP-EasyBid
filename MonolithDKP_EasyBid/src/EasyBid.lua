@@ -11,15 +11,19 @@ local bidStepDefault = 10;
 
 EasyBid.var = {
     gui = {
+        isVisible = false,
         frame = nil,
         editBox = nil,
         slider = nil,
         currentItem = nil,
         groupBidder = nil,
-        isVisible = false,
         scrollContainer = nil,
         whisp = nil,
         btnBid = nil,
+        scroll = nil,
+        btnSetHalf = nil,
+        btnSetMaximum = nil,
+        isBidMax = nil,
     },
     minimumBid = nil,
     myBid = nil,
@@ -291,7 +295,7 @@ end
 
 function EasyBid:HideBiddingFrame()
     if (EasyBid.var.gui.isVisible) then
-        EasyBid:StopGUI()
+        EasyBid:StopGUI(EasyBid.var.gui.frame)
     end
 end
 
@@ -454,18 +458,18 @@ function EasyBid:FillBidders()
 
     for index, value in ipairs(EasyBid.var.bidders) do
         if (EasyBid.var.gui.scroll ~= nil) then
-            local bidLabel = EasyBid:createLabel()
+            local bidLabel = AceGUI:Create("Label")
             bidLabel:SetWidth(45)
             bidLabel:SetText(value.bid .. "   ")
             bidLabel.label:SetJustifyH("RIGHT")
 
-            local playerLabel = EasyBid:createLabel()
+            local playerLabel = AceGUI:Create("InteractiveLabel")
             playerLabel:SetColor(EasyBid:GetClassColor(value.player))
             playerLabel:SetText(value.player)
             playerLabel:SetWidth(105)
 
             local playerDkp = EasyBid:GetPlayerDkp(value.player);
-            local maxLabel = EasyBid:createLabel()
+            local maxLabel = AceGUI:Create("Label")
             maxLabel:SetWidth(45)
 
             if (playersAlreadyShown[value.player]) then
@@ -548,13 +552,13 @@ function EasyBid:FillBidders()
     end
 
     if (EasyBid.var.gui.groupBidder ~= nil) then
-        local highestBid = EasyBid:createLabel()
+        local highestBid = AceGUI:Create("Label")
         local Path, Size, Flags = highestBid.label:GetFont()
         highestBid.label:SetFont(Path, 28, Flags);
         highestBid:SetRelativeWidth(0.3)
 
-        local highestBidder = EasyBid:createLabel()
-        local Path, Size, Flags = highestBidder.label:GetFont()
+        local highestBidder = AceGUI:Create("InteractiveLabel")
+        Path, Size, Flags = highestBidder.label:GetFont()
         highestBidder.label:SetFont(Path, 28, Flags);
         highestBidder:SetRelativeWidth(0.7)
 
@@ -854,13 +858,7 @@ function EasyBid:StartGUI()
     frame:SetWidth(600)
     frame:SetHeight(420)
     frame:SetLayout("Flow");
-    frame:SetCallback("OnClose",
-        function(widget)
-            AceGUI:Release(widget);
-            EasyBid:Unhook(frame.frame, "OnHide")
-            EasyBid.var.gui.isVisible = false
-        end
-    )
+    frame:SetCallback("OnClose", function(widget) EasyBid:StopGUI(widget) end)
     frame:EnableResize(false);
     EasyBid:RawHookScript(frame.frame, "OnHide",
         function(f)
@@ -894,14 +892,14 @@ function EasyBid:StartGUI()
     currentItem.label:SetFont(Path, 20, Flags);
 
     local isBidMax = AceGUI:Create("Label")
-    local Path, Size, Flags = isBidMax.label:GetFont()
+    Path, Size, Flags = isBidMax.label:GetFont()
     isBidMax.label:SetFont(Path, 10, Flags);
 
     local editbox = AceGUI:Create("EditBox")
     editbox:SetText(tostring(EasyBid.var.minimumBid))
 
     editbox:SetWidth(100)
-    local Path, Size, Flags = editbox.editbox:GetFont()
+    Path, Size, Flags = editbox.editbox:GetFont()
     editbox.editbox:SetFont(Path, 20, Flags);
 
     editbox:SetCallback(
@@ -989,7 +987,7 @@ function EasyBid:StartGUI()
 
     local whisp = AceGUI:Create("Label");
     whisp:SetRelativeWidth(1)
-    local Path, Size, Flags = whisp.label:GetFont()
+    Path, Size, Flags = whisp.label:GetFont()
     whisp.label:SetFont(Path, 13, Flags);
     whisp:SetColor(0.4, 0.96, 0.26)
 
@@ -1126,10 +1124,25 @@ function EasyBid:StartGUI()
 
 end
 
-function EasyBid:StopGUI()
-    if (EasyBid.var.gui.frame ~= nil) then
-        EasyBid.var.gui.frame:Hide();
-        EasyBid.var.gui.isVisible = false
+function EasyBid:StopGUI(widget)
+    if (widget ~= nil) then
+        AceGUI:Release(widget)
+        EasyBid:Unhook(widget.frame, "OnHide")
+        EasyBid.var.gui = {
+            isVisible = false,
+            frame = nil,
+            editBox = nil,
+            slider = nil,
+            currentItem = nil,
+            groupBidder = nil,
+            scrollContainer = nil,
+            whisp = nil,
+            btnBid = nil,
+            scroll = nil,
+            btnSetHalf = nil,
+            btnSetMaximum = nil,
+            isBidMax = nil,
+        };
     end
 end
 
@@ -1318,12 +1331,15 @@ function EasyBid:OnCommReceived(prefix, message, distribution, sender)
                         EasyBid.var.nextMinimum = nil;
                         EasyBid.var.lastOfficerWhisper = nil;
                     elseif command == "BidInfo" then
+                        EasyBid.var.bidders = {};
+                        EasyBid.var.lastOfficerWhisper = nil;
                         EasyBid.var.currentItem = arg1
                         EasyBid.var.minimumBid = tonumber(arg2) or EasyBidSettings.bidStep
                         EasyBid.var.bidOfficer = sender
                         EasyBid.var.myBid = EasyBid.var.minimumBid
                         EasyBid.var.nextMinimum = EasyBid.var.minimumBid
 
+                        EasyBid:HideBiddingFrame()
                         EasyBid:ShowBiddingFrame()
                     end
                 end
@@ -1349,7 +1365,11 @@ function EasyBid:OnCommReceived(prefix, message, distribution, sender)
                             local bidders = deserialized
                             table.sort(bidders, function (k1, k2) return k1.bid > k2.bid end)
                             EasyBid.var.bidders = bidders
-                            EasyBid:FillBidders()
+
+                            if (EasyBid.var.gui.isVisible) then
+                                EasyBid:FillBidders()
+                            end
+
                             return
                         elseif prefix == "MonDKPLootDist" then
                             local search = EasyBid:Table_Search(MonDKP_EasyBid_DKPTable, deserialized.player, "player")
@@ -1537,127 +1557,3 @@ function EasyBid:HSVtoRGB(h, s, v)
         return v, p, q;
     end
 end
-
--- creates AceGUI-like widget that is not pooled
-function EasyBid:createLabel()
-    local frame = CreateFrame("Frame", nil, UIParent)
-    frame:Hide()
-
-    local label = frame:CreateFontString(nil, "BACKGROUND", "GameFontHighlightSmall")
-
-    -- create widget
-    local widget = {
-        label = label,
-        frame = frame,
-        type = "LabelEasyBid",
-    }
-
-    function update(self)
-        if self.resizing then return end
-        local width = self.frame.width or self.frame:GetWidth() or 0
-        local height
-
-        self.label:ClearAllPoints()
-
-        self.label:SetPoint("TOPLEFT")
-        self.label:SetWidth(width)
-        height = self.label:GetStringHeight()
-
-        -- avoid zero-height labels, since they can used as spacers
-        if not height or height == 0 then
-            height = 1
-        end
-
-        self.resizing = true
-        self.frame:SetHeight(height)
-        self.frame.height = height
-        self.resizing = nil
-    end
-
-    widget["SetText"] = function(self, text)
-        self.label:SetText(text)
-        update(self)
-    end
-
-    widget["SetColor"] = function(self, r, g, b)
-        if not (r and g and b) then
-            r, g, b = 1, 1, 1
-        end
-        self.label:SetVertexColor(r, g, b)
-    end
-
-    widget["OnWidthSet"] = function(self, width)
-        update(self)
-    end
-
-    widget["SetWidth"] = function(self, width)
-        self.frame:SetWidth(width)
-        self.frame.width = width
-        if self.OnWidthSet then
-            self:OnWidthSet(width)
-        end
-    end
-
-    widget["SetParent"] = function(self, parent)
-        self.frame:SetParent(nil)
-        self.frame:SetParent(parent.content)
-        self.parent = parent
-    end
-
-    widget["ClearAllPoints"] = function(self)
-        return self.frame:ClearAllPoints()
-    end
-
-    widget["SetPoint"] = function(self, ...)
-        return self.frame:SetPoint(...)
-    end
-
-    widget["SetRelativeWidth"] = function(self, width)
-        if width <= 0 or width > 1 then
-            error(":SetRelativeWidth(width): Invalid relative width.", 2)
-        end
-        self.relWidth = width
-        self.width = "relative"
-    end
-
-    widget["Fire"] = function(self, name, ...)
-        if self.events[name] then
-            local success, ret = safecall(self.events[name], self, name, ...)
-            if success then
-                return ret
-            end
-        end
-    end
-
-    -- registerAsWidget
-    widget.userdata = {}
-    widget.events = {}
-    --widget.base = WidgetBase
-    widget.frame.obj = widget
-    --widget.frame:SetScript("OnSizeChanged", FrameResize)
-    --setmetatable(widget, {__index = WidgetBase})
-    --return widget
-
-    -- OnAcquire
-    widget.resizing = true
-    -- height is set dynamically by the text and image size
-    widget:SetWidth(200)
-    widget:SetText()
-    widget:SetColor()
-
-    label:SetFont(GameFontHighlightSmall:GetFont())
-    label:SetJustifyH("LEFT")
-    label:SetJustifyV("TOP")
-
-    -- reset the flag
-    widget.resizing = nil
-    -- run the update explicitly
-    update(widget)
-
-    widget.LayoutFunc = AceGUI:GetLayout("List")
-    widget.LayoutPaused = nil
-
-    return widget
-
-end
-
