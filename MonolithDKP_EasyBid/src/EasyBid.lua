@@ -7,6 +7,8 @@ local LibAceSerializer = LibStub:GetLibrary("AceSerializer-3.0")
 local LibDeflate = LibStub:GetLibrary("LibDeflate")
 
 local MAXIMUM = 99999;
+local bidStepDefault = 10;
+
 EasyBid.var = {
     gui = {
         frame = nil,
@@ -27,7 +29,6 @@ EasyBid.var = {
     bidders = {},
     maxBidder = nil,
     maxBidValue = nil,
-    bidStep = 10,
     lastOfficerWhisper = nil,
     isEditing = false,
 }
@@ -128,6 +129,38 @@ EasyBid.Options = {
     type = "group",
     name = "Monolith DKP Easy Bid",
     args = {
+        general = {
+            type = "group",
+            name = "General",
+            order = 0,
+            args = {
+                bidStep = {
+                    type = "input",
+                    name = "Bid step",
+                    desc = "Minimum step between two consecutive bids",
+                    width = "half",
+                    get = function() return tostring(EasyBidSettings.bidStep) end,
+                    set = function(_, value) EasyBidSettings.bidStep = tonumber(value) end,
+                    validate = function(_, value)
+                        return strmatch(value, "^%d+$") and tonumber(value) ~= nil and tonumber(value) > 0
+                    end
+                },
+                resetPosition = {
+                    type = "execute",
+                    name = "Reset frame position",
+                    desc = "Resets bidding frame position to default",
+                    func = function()
+                        EasyBidSettings.position = nil
+                        if (EasyBid.var.gui.isVisible) then
+                            EasyBid:PositionFrame()
+                        end
+                        EasyBid:Print("----------------------------------------")
+                        EasyBid:Print("Bidding window position reset succesful.")
+                        EasyBid:Print("----------------------------------------")
+                    end
+                }
+            }
+        },
         armor = {
             type = "group",
             name = "Armor",
@@ -142,20 +175,6 @@ EasyBid.Options = {
             get = function(info) return not EasyBidSettings.weapons[info.arg] end,
             set = function(info, value) EasyBidSettings.weapons[info.arg] = not value end,
         },
-        resetPosition = {
-            type = "execute",
-            name = "Reset position",
-            desc = "Resets bidding frame position to default",
-            func = function()
-                EasyBidSettings.position = nil
-                if (EasyBid.var.gui.isVisible) then
-                    EasyBid:PositionFrame()
-                end
-                EasyBid:Print("----------------------------------------")
-                EasyBid:Print("Bidding window position reset succesful.")
-                EasyBid:Print("----------------------------------------")
-            end
-        }
     }
 }
 
@@ -167,7 +186,12 @@ function EasyBid:OnInitialize()
         initialized = false,
         position = nil,
         useMyMax = true,
+        bidStep = bidStepDefault,
     } end;
+
+    if (EasyBidSettings.bidStep == nil) then
+        EasyBidSettings.bidStep = bidStepDefault;
+    end
 
     local myName = UnitName("player")
     local cls = EasyBid:GetClass(myName)
@@ -608,12 +632,14 @@ function EasyBid:OnMessage(self, message, author)
     --        local itemId = t[3];
     --        local minBid = t[4];
     --        EasyBid:SendData("MonDKPCommand", "BidInfo,"..itemId..","..minBid..","..",")
+    --        Bids_Submitted = {}
     --    elseif(t[2] == "bid") then
     --        local player = t[3];
     --        local dkp = tonumber(t[4]);
     --        table.insert(Bids_Submitted, {player=player, bid=dkp})
     --        EasyBid:SendData("MonDKPBidShare", Bids_Submitted)
     --    elseif(t[2] == "stop") then
+    --        Bids_Submitted = {}
     --        EasyBid:SendData("MonDKPCommand", "StopBidTimer")
     --    end
     --else
@@ -642,7 +668,7 @@ function EasyBid:normalizeBid(value)
     if (value ~= nil) then
         local parsed = tonumber(value)
         if (parsed ~= nil) then
-            parsed = parsed - ((parsed - EasyBid.var.minimumBid) % EasyBid.var.bidStep)
+            parsed = parsed - ((parsed - EasyBid.var.minimumBid) % EasyBidSettings.bidStep)
             return parsed
         end
     end
@@ -682,14 +708,19 @@ end
 
 function EasyBid:SetNextMinimum()
     local minimum = EasyBid.var.minimumBid
+    local toSet;
+
     if (EasyBid.var.maxBidder ~= nil) then
-        minimum = EasyBid:normalizeBid(EasyBid.var.maxBidder.bid + EasyBid.var.bidStep);
+        minimum = EasyBid:normalizeBid(EasyBid.var.maxBidder.bid + EasyBidSettings.bidStep);
+        toSet = EasyBid.var.maxBidder.bid
+    else
+        toSet = minimum
     end
 
     EasyBid.var.nextMinimum = minimum
 
-    if (EasyBid.var.myBid ~= nil and minimum ~= nil and EasyBid.var.gui.editBox ~= nil and EasyBid.var.myBid < minimum) then
-        EasyBid:setMyBid(EasyBid.var.maxBidder.bid, null, true)
+    if (EasyBid.var.myBid ~= nil and toSet ~= nil and EasyBid.var.gui.editBox ~= nil and EasyBid.var.myBid <= toSet) then
+        EasyBid:setMyBid(toSet, null, true)
     end
 end
 
@@ -723,7 +754,7 @@ function EasyBid:setMax()
     local max = EasyBid:GetActualMax()
 
     if (EasyBid.var.gui.slider ~= nil) then
-        EasyBid.var.gui.slider:SetSliderValues(EasyBid.var.minimumBid, EasyBid:normalizeBid(max), EasyBid.var.bidStep)
+        EasyBid.var.gui.slider:SetSliderValues(EasyBid.var.minimumBid, EasyBid:normalizeBid(max), EasyBidSettings.bidStep)
     end
     if(EasyBid.var.gui.btnSetHalf ~= nil) then
         EasyBid.var.gui.btnSetHalf:SetCallback("OnClick", function() EasyBid:setMyBid(max / 2, nil) end)
@@ -818,40 +849,40 @@ function EasyBid:StartGUI()
     end)
 
     local btnAdd10 = AceGUI:Create("Button")
-    btnAdd10:SetText("+"..EasyBid.var.bidStep)
+    btnAdd10:SetText("+"..EasyBidSettings.bidStep)
     btnAdd10:SetWidth(100)
     btnAdd10:SetHeight(30)
-    btnAdd10:SetCallback("OnClick", function() EasyBid:setMyBid(nil, EasyBid.var.bidStep) end)
+    btnAdd10:SetCallback("OnClick", function() EasyBid:setMyBid(nil, EasyBidSettings.bidStep) end)
 
     local btnAdd50 = AceGUI:Create("Button")
-    btnAdd50:SetText("+"..(5 * EasyBid.var.bidStep))
+    btnAdd50:SetText("+"..(5 * EasyBidSettings.bidStep))
     btnAdd50:SetWidth(100)
     btnAdd50:SetHeight(30)
-    btnAdd50:SetCallback("OnClick", function() EasyBid:setMyBid(nil, 5 * EasyBid.var.bidStep) end)
+    btnAdd50:SetCallback("OnClick", function() EasyBid:setMyBid(nil, 5 * EasyBidSettings.bidStep) end)
 
     local btnAdd100 = AceGUI:Create("Button")
-    btnAdd100:SetText("+"..(10 * EasyBid.var.bidStep))
+    btnAdd100:SetText("+"..(10 * EasyBidSettings.bidStep))
     btnAdd100:SetWidth(100)
     btnAdd100:SetHeight(30)
-    btnAdd100:SetCallback("OnClick", function() EasyBid:setMyBid(nil, 10 * EasyBid.var.bidStep) end)
+    btnAdd100:SetCallback("OnClick", function() EasyBid:setMyBid(nil, 10 * EasyBidSettings.bidStep) end)
 
     local btnMinus10 = AceGUI:Create("Button")
-    btnMinus10:SetText("-"..EasyBid.var.bidStep)
+    btnMinus10:SetText("-"..EasyBidSettings.bidStep)
     btnMinus10:SetWidth(100)
     btnMinus10:SetHeight(30)
-    btnMinus10:SetCallback("OnClick", function() EasyBid:setMyBid(nil, -EasyBid.var.bidStep) end)
+    btnMinus10:SetCallback("OnClick", function() EasyBid:setMyBid(nil, -EasyBidSettings.bidStep) end)
 
     local btnMinus50 = AceGUI:Create("Button")
-    btnMinus50:SetText("-"..(5 * EasyBid.var.bidStep))
+    btnMinus50:SetText("-"..(5 * EasyBidSettings.bidStep))
     btnMinus50:SetWidth(100)
     btnMinus50:SetHeight(30)
-    btnMinus50:SetCallback("OnClick", function() EasyBid:setMyBid(nil, -5 * EasyBid.var.bidStep) end)
+    btnMinus50:SetCallback("OnClick", function() EasyBid:setMyBid(nil, -5 * EasyBidSettings.bidStep) end)
 
     local btnMinus100 = AceGUI:Create("Button")
-    btnMinus100:SetText("-"..(10 * EasyBid.var.bidStep))
+    btnMinus100:SetText("-"..(10 * EasyBidSettings.bidStep))
     btnMinus100:SetWidth(100)
     btnMinus100:SetHeight(30)
-    btnMinus100:SetCallback("OnClick", function() EasyBid:setMyBid(nil, -10 * EasyBid.var.bidStep) end)
+    btnMinus100:SetCallback("OnClick", function() EasyBid:setMyBid(nil, -10 * EasyBidSettings.bidStep) end)
 
     local minBidSlider = AceGUI:Create("Slider")
     minBidSlider:SetRelativeWidth(1)
@@ -1206,7 +1237,7 @@ function EasyBid:OnCommReceived(prefix, message, distribution, sender)
                         EasyBid.var.lastOfficerWhisper = nil;
                     elseif command == "BidInfo" then
                         EasyBid.var.currentItem = arg1
-                        EasyBid.var.minimumBid = tonumber(arg2) or EasyBid.var.bidStep
+                        EasyBid.var.minimumBid = tonumber(arg2) or EasyBidSettings.bidStep
                         EasyBid.var.bidOfficer = sender
                         EasyBid.var.myBid = EasyBid.var.minimumBid
                         EasyBid.var.nextMinimum = EasyBid.var.minimumBid
