@@ -16,6 +16,12 @@ Independent bidding frame to use with MonolithDKP addon
 
 - Provides **link** to current bidding item
 
- 
+## Info
 
 *This is standalone plugin that hooks on MonolithDKP events, therefore you may want to disable auto-popup for original MonolithDKP frame. If you accidentaly close this frame during bidding, you may open it again with `/ebid`. The original "Bid" button besides the timer opens the original MonolithDKP window.*
+
+## Download
+
+Recommended download is via Twitch app.
+
+You can also download it manually either directly from the release page or from [CurseForge](https://www.curseforge.com/wow/addons/monolithdkp-easybid)
