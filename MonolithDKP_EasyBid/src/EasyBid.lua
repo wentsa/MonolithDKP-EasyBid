@@ -665,17 +665,6 @@ function EasyBid:FillBidders()
         highestBidder:ClearAllPoints()
         if (cancelBid ~= nil) then
             highestBidder:SetPoint("LEFT", cancelBid.frame, "RIGHT", 30, 0)
-
-            local ag = highestBidder.frame:CreateAnimationGroup()
-
-            ag:SetLooping("BOUNCE")
-            local a4 = ag:CreateAnimation("Alpha")
-            a4:SetFromAlpha(1)
-            a4:SetToAlpha(0.75)
-            a4:SetDuration(0.25)
-            a4:SetSmoothing("IN_OUT")
-
-            ag:Play()
         else
             highestBidder:SetPoint("LEFT", highestBid.frame, "RIGHT")
         end
@@ -967,6 +956,7 @@ function EasyBid:StartGUI()
     local minBidSlider = AceGUI:Create("Slider")
     minBidSlider:SetRelativeWidth(1)
     minBidSlider:SetValue(EasyBid.var.myBid)
+    minBidSlider:SetLabel("")
     minBidSlider:SetCallback("OnValueChanged", function(widget, name, value) EasyBid:setMyBid(value, nil) end)
 
     local btnSetMinimum = AceGUI:Create("Button")
