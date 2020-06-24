@@ -9,6 +9,8 @@ local LibDeflate = LibStub:GetLibrary("LibDeflate")
 local MAXIMUM = 99999;
 local bidStepDefault = 10;
 
+local TABLES_VERSION = 1
+
 EasyBid.var = {
     gui = {
         isVisible = false,
@@ -183,7 +185,19 @@ EasyBid.Options = {
 }
 
 function EasyBid:OnInitialize()
-    if not MonDKP_EasyBid_DKPTable then MonDKP_EasyBid_DKPTable = {} end;
+    local reset = TablesVersion == nil or TABLES_VERSION > tonumber(TablesVersion)
+
+    if reset or not MonDKP_EasyBid_DKPTable then MonDKP_EasyBid_DKPTable = {} end;
+    if reset or not MonDKP_EasyBid_Loot then MonDKP_EasyBid_Loot = {} end;
+    if reset or not MonDKP_EasyBid_DKPHistory then MonDKP_EasyBid_DKPHistory = {} end;
+    if reset or not MonDKP_EasyBid_Archive then MonDKP_EasyBid_Archive = {} end;
+
+    if reset or not MonDKP_EasyBid_DKPHistory.seed then MonDKP_EasyBid_DKPHistory.seed = 0 end
+    if reset or not MonDKP_EasyBid_Loot.seed then MonDKP_EasyBid_Loot.seed = 0 end
+    if reset or MonDKP_EasyBid_DKPTable.seed then MonDKP_EasyBid_DKPTable.seed = nil end
+
+    TablesVersion = TABLES_VERSION
+
     if not EasyBidSettings then EasyBidSettings = {
         armor = {},
         weapons = {},
@@ -198,7 +212,7 @@ function EasyBid:OnInitialize()
     end
 
     local myName = UnitName("player")
-    local cls = EasyBid:GetClass(myName)
+    local cls = EasyBidUtils:GetClass(myName)
 
     -- Fill options table armor
     local armor = {}
@@ -299,36 +313,6 @@ function EasyBid:HideBiddingFrame()
     end
 end
 
-function EasyBid:GetClass(player)
-    local cls = nil;
-    local search = EasyBid:Table_Search(MonDKP_EasyBid_DKPTable, player)
-    if (search) then
-        cls = MonDKP_EasyBid_DKPTable[search[1][1]].class
-    end
-
-    if (cls == nil) then
-        local playerForClass = player;
-        if (UnitName("player") == player) then
-           playerForClass = "player";
-        end
-
-        local _, classFilename = UnitClass(playerForClass)
-        cls = classFilename
-    end
-
-    return cls;
-end
-
-function EasyBid:GetClassColor(player)
-    local cls = EasyBid:GetClass(player);
-
-    if (cls ~= nil and classes[cls] ~= nil) then
-        return classes[cls].color.r, classes[cls].color.g, classes[cls].color.b
-    end
-
-    return 1, 1, 1
-end
-
 function EasyBid:GetPlayerDkp(player)
     local name = player
     if (name == nil) then
@@ -336,7 +320,7 @@ function EasyBid:GetPlayerDkp(player)
     end
 
     if (name ~= nil) then
-        local search = EasyBid:Table_Search(MonDKP_EasyBid_DKPTable, name)
+        local search = EasyBidUtils:Table_Search(MonDKP_EasyBid_DKPTable, name)
         if (search) then
             return MonDKP_EasyBid_DKPTable[search[1][1]].dkp
         end
@@ -417,24 +401,6 @@ function EasyBid:FillCurrentItemAndPossiblyShow()
     return false
 end
 
-function EasyBid:GetGuildRank(player)
-    local name, rank, rankIndex;
-    local guildSize;
-
-    if IsInGuild() then
-        guildSize = GetNumGuildMembers();
-        for i=1, guildSize do
-            name, rank, rankIndex = GetGuildRosterInfo(i)
-            name = strsub(name, 1, string.find(name, "-")-1)  -- required to remove server name from player (can remove in classic if this is not an issue)
-            if name == player then
-                return rank, rankIndex;
-            end
-        end
-    end
-    return nil
-end
-
-
 function EasyBid:FillBidders()
     EasyBid.var.maxBidder = nil;
     EasyBid.var.maxBidValue = 0
@@ -464,7 +430,7 @@ function EasyBid:FillBidders()
             bidLabel.label:SetJustifyH("RIGHT")
 
             local playerLabel = AceGUI:Create("InteractiveLabel")
-            playerLabel:SetColor(EasyBid:GetClassColor(value.player))
+            playerLabel:SetColor(EasyBidUtils:GetClassColor(value.player))
             playerLabel:SetText(value.player)
             playerLabel:SetWidth(105)
 
@@ -478,14 +444,14 @@ function EasyBid:FillBidders()
                 biddersNumber = biddersNumber + 1;
                 if (playerDkp == MAXIMUM) then
                     maxLabel:SetText("(???)")
-                    maxLabel:SetColor(EasyBid:HSVtoRGB(0, 1, 1))
+                    maxLabel:SetColor(EasyBidUtils:HSVtoRGB(0, 1, 1))
                 else
                     maxLabel:SetText("(" .. tostring(playerDkp) .. ")")
                     if (minMaxValue == maxMaxValue) then
-                        maxLabel:SetColor(EasyBid:HSVtoRGB(120, 1, 1))
+                        maxLabel:SetColor(EasyBidUtils:HSVtoRGB(120, 1, 1))
                     else
                         local dkpPercentage = (playerDkp - minMaxValue) / (maxMaxValue - minMaxValue);
-                        maxLabel:SetColor(EasyBid:HSVtoRGB(120 * dkpPercentage, 1, 1))
+                        maxLabel:SetColor(EasyBidUtils:HSVtoRGB(120 * dkpPercentage, 1, 1))
                     end
                 end
             end
@@ -506,7 +472,7 @@ function EasyBid:FillBidders()
 
             local guildName, guildRankName, guildRankIndex = GetGuildInfo(value.player)
             if (guildName == nil) then
-                local rank, rankIdx = EasyBid:GetGuildRank(value.player);
+                local rank, rankIdx = EasyBidUtils:GetGuildRank(value.player);
                 if (rank ~= nil) then
                     guildName = GetGuildInfo("player")
                     guildRankName = rank
@@ -603,11 +569,11 @@ function EasyBid:FillBidders()
                 highestBidder:SetColor(1, 1, 1)
             else
                 highestBidder:SetText(EasyBid.var.maxBidder.player)
-                highestBidder:SetColor(EasyBid:GetClassColor(EasyBid.var.maxBidder.player))
+                highestBidder:SetColor(EasyBidUtils:GetClassColor(EasyBid.var.maxBidder.player))
 
                 local guildName, guildRankName, guildRankIndex = GetGuildInfo(EasyBid.var.maxBidder.player)
                 if (guildName == nil) then
-                    local rank, rankIdx = EasyBid:GetGuildRank(EasyBid.var.maxBidder.player);
+                    local rank, rankIdx = EasyBidUtils:GetGuildRank(EasyBid.var.maxBidder.player);
                     if (rank ~= nil) then
                         guildName = GetGuildInfo("player")
                         guildRankName = rank
@@ -1136,159 +1102,6 @@ function EasyBid:StopGUI(widget)
     end
 end
 
-
-
-
-function EasyBid:GetGuildRankIndex(player)
-    local name, rank;
-    local guildSize,_,_ = GetNumGuildMembers();
-
-    if IsInGuild() then
-        for i=1, tonumber(guildSize) do
-            name,_,rank = GetGuildRosterInfo(i)
-            name = strsub(name, 1, string.find(name, "-")-1)  -- required to remove server name from player (can remove in classic if this is not an issue)
-            if name == player then
-                return rank+1;
-            end
-        end
-        return false;
-    end
-end
-
-function EasyBid:ValidateSender(sender)                -- returns true if "sender" has permission to write officer notes. false if not or not found.
-    local rankIndex = EasyBid:GetGuildRankIndex(sender);
-
-    if rankIndex == 1 then             -- automatically gives permissions above all settings if player is guild leader
-        return true;
-    end
-    if rankIndex then
-        return C_GuildInfo.GuildControlGetRankFlags(rankIndex)[12]    -- returns true/false if player can write to officer notes
-    else
-        return false;
-    end
-end
-
--------------------------------------
--- Recursively searches tar (table) for val (string) as far as 4 nests deep (use field only if you wish to search a specific key IE: MonDKP_EasyBid_DKPTable, "Roeshambo", "player" would only search for Roeshambo in the player key)
--- returns an indexed array of the keys to get to searched value
--- First key is the result (ie if it's found 8 times, it will return 8 tables containing results).
--- Second key holds the path to the value searched. So to get to a player searched on DKPTable that returned 1 result, MonDKP_EasyBid_DKPTable[search[1][1]][search[1][2]] would point at the "player" field
--- if the result is 1 level deeper, it would be MonDKP_EasyBid_DKPTable[search[1][1]][search[1][2]][search[1][3]].  MonDKP_EasyBid_DKPTable[search[2][1]][search[2][2]][search[2][3]] would locate the second return, if there is one.
--- use to search for players in SavedVariables. Only two possible returns is the table or false.
--------------------------------------
-function EasyBid:Table_Search(tar, val, field)
-    local value = string.upper(tostring(val));
-    local location = {}
-    for k,v in pairs(tar) do
-        if(type(v) == "table") then
-            local temp1 = k
-            for k,v in pairs(v) do
-                if(type(v) == "table") then
-                    local temp2 = k;
-                    for k,v in pairs(v) do
-                        if(type(v) == "table") then
-                            local temp3 = k
-                            for k,v in pairs(v) do
-                                if string.upper(tostring(v)) == value then
-                                    if field then
-                                        if k == field then
-                                            tinsert(location, {temp1, temp2, temp3, k} )
-                                        end
-                                    else
-                                        tinsert(location, {temp1, temp2, temp3, k} )
-                                    end
-                                end;
-                            end
-                        end
-                        if string.upper(tostring(v)) == value then
-                            if field then
-                                if k == field then
-                                    tinsert(location, {temp1, temp2, k} )
-                                end
-                            else
-                                tinsert(location, {temp1, temp2, k} )
-                            end
-                        end;
-                    end
-                end
-                if string.upper(tostring(v)) == value then
-                    if field then
-                        if k == field then
-                            tinsert(location, {temp1, k} )
-                        end
-                    else
-                        tinsert(location, {temp1, k} )
-                    end
-                end;
-            end
-        end
-        if string.upper(tostring(v)) == value then
-            if field then
-                if k == field then
-                    tinsert(location, k)
-                end
-            else
-                tinsert(location, k)
-            end
-        end;
-    end
-    if (#location > 0) then
-        return location;
-    else
-        return false;
-    end
-end
-
-function MonDKP_Profile_Create(player, dkp, gained, spent)
-	local tempName, tempClass
-	local guildSize = GetNumGuildMembers();
-	local class = "NONE"
-	local dkp = dkp or 0
-	local gained = gained or 0
-	local spent = spent or 0
-	local created = false
-
-	for i=1, guildSize do
-		tempName,_,_,_,_,_,_,_,_,_,tempClass = GetGuildRosterInfo(i)
-		tempName = strsub(tempName, 1, string.find(tempName, "-")-1)			-- required to remove server name from player (can remove in classic if this is not an issue)
-		if tempName == player then
-			class = tempClass
-			table.insert(MonDKP_EasyBid_DKPTable, { player=player, lifetime_spent=spent, lifetime_gained=gained, class=class, dkp=dkp, rank=10, spec="No Spec Reported", role="No Role Detected", rankName="None", previous_dkp=0, })
-
-			created = true
-			break
-		end
-	end
-
-	if not created and (IsInRaid() or IsInGroup()) then 	-- if player not found in guild, checks raid/party
-		local GroupSize
-
-		if IsInRaid() then
-			GroupSize = 40
-		elseif IsInGroup() then
-			GroupSize = 5
-		end
-
-		for i=1, GroupSize do
-			tempName,_,_,_,_,tempClass = GetRaidRosterInfo(i)
-			if tempName == player then
-				if not EasyBid:Table_Search(MonDKP_EasyBid_DKPTable, tempName, "player") then
-					tinsert(MonDKP_EasyBid_DKPTable, { player=player, class=tempClass, dkp=dkp, previous_dkp=0, lifetime_gained=gained, lifetime_spent=spent, rank=10, rankName="None", spec="No Spec Reported", role="No Role Detected", })
-					created = true
-					break
-				end
-			end
-		end
-	end
-
-	if not created then
-		tinsert(MonDKP_EasyBid_DKPTable, { player=player, class=class, dkp=dkp, previous_dkp=0, lifetime_gained=gained, lifetime_spent=spent, rank=10, rankName="None", spec="No Spec Reported", role="No Role Detected", })
-	end
-
-	return created
-end
-
-
 -- MonDKPCommand, StartBidTimer,20,[ItemLink] Min Bid: 10, 133768, RAID, Zeusovaneter
 -- MonDKPCommand, BidInfo,20,[ItemLink],10,133768, RAID, Zeusovaneter -- dloouhy ID je id ikony
 -- MonDKPCommand, BidInfo,[ItemLink2],10,133143, RAID, Zeusovaneter
@@ -1305,171 +1118,43 @@ end
 
 --table.insert(Bids_Submitted, {player=name, dkp=dkp})
 function EasyBid:OnCommReceived(prefix, message, distribution, sender)
-    if prefix then
-        if EasyBid:ValidateSender(sender) then    -- validates sender as an officer. fail-safe to prevent addon alterations to manipulate DKP table
-            if (prefix == "MonDKPCommand") then
-                local command, arg1, arg2, arg3, arg4 = strsplit(",", message);
-                if sender ~= UnitName("player") then
-                    if command == "StopBidTimer" then
-                        EasyBid:HideBiddingFrame()
+    return EasyBidComm:OnComm(
+            prefix,
+            message,
+            distribution,
+            sender,
+            function ()
+                EasyBid:HideBiddingFrame()
 
-                        EasyBid.var.minimumBid = nil;
-                        EasyBid.var.myBid = nil;
-                        EasyBid.var.bidOfficer = nil;
-                        EasyBid.var.currentItem = nil;
-                        EasyBid.var.bidders = {};
-                        EasyBid.var.nextMinimum = nil;
-                        EasyBid.var.lastOfficerWhisper = nil;
-                    elseif command == "BidInfo" then
-                        EasyBid.var.bidders = {};
-                        EasyBid.var.lastOfficerWhisper = nil;
-                        EasyBid.var.currentItem = arg1
-                        EasyBid.var.minimumBid = tonumber(arg2) or EasyBidSettings.bidStep
-                        EasyBid.var.bidOfficer = sender
-                        EasyBid.var.myBid = EasyBid.var.minimumBid
-                        EasyBid.var.nextMinimum = EasyBid.var.minimumBid
+                EasyBid.var.minimumBid = nil;
+                EasyBid.var.myBid = nil;
+                EasyBid.var.bidOfficer = nil;
+                EasyBid.var.currentItem = nil;
+                EasyBid.var.bidders = {};
+                EasyBid.var.nextMinimum = nil;
+                EasyBid.var.lastOfficerWhisper = nil;
+            end,
+            function (item, minBid, officer)
+                EasyBid.var.bidders = {};
+                EasyBid.var.lastOfficerWhisper = nil;
+                EasyBid.var.currentItem = item
+                EasyBid.var.minimumBid = tonumber(minBid) or EasyBidSettings.bidStep
+                EasyBid.var.bidOfficer = officer
+                EasyBid.var.myBid = EasyBid.var.minimumBid
+                EasyBid.var.nextMinimum = EasyBid.var.minimumBid
 
-                        EasyBid:HideBiddingFrame()
-                        EasyBid:ShowBiddingFrame()
-                    end
+                EasyBid:HideBiddingFrame()
+                EasyBid:ShowBiddingFrame()
+            end,
+            function (bidders)
+                table.sort(bidders, function (k1, k2) return k1.bid > k2.bid end)
+                EasyBid.var.bidders = bidders
+
+                if (EasyBid.var.gui.isVisible) then
+                    EasyBid:FillBidders()
                 end
             end
-            if (sender ~= UnitName("player")) then
-                if prefix == "MonDKPLootDist" or prefix == "MonDKPDKPDist" or prefix == "MonDKPDelLoot" or prefix == "MonDKPDelSync" or prefix == "MonDKPMinBid" or prefix == "MonDKPWhitelist"
-                        or prefix == "MonDKPDKPModes" or prefix == "MonDKPStand" or prefix == "MonDKPZSumBank" or prefix == "MonDKPBossLoot" or prefix == "MonDKPDecay" or prefix == "MonDKPDelUsers" or
-                        prefix == "MonDKPAllTabs" or prefix == "MonDKPBidShare" or prefix == "MonDKPMerge" then
-                    decoded = LibDeflate:DecompressDeflate(LibDeflate:DecodeForWoWAddonChannel(message))
-                    local success, deserialized = LibAceSerializer:Deserialize(decoded);
-                    if success then
-                        if prefix == "MonDKPAllTabs" then   -- receives full table broadcast
-                            table.sort(deserialized.Loot, function(a, b)
-                                return a["date"] > b["date"]
-                            end)
-                            table.sort(deserialized.DKP, function(a, b)
-                                return a["date"] > b["date"]
-                            end)
-
-                            MonDKP_EasyBid_DKPTable = deserialized.DKPTable
-                            return
-                        elseif prefix == "MonDKPBidShare" then
-                            local bidders = deserialized
-                            table.sort(bidders, function (k1, k2) return k1.bid > k2.bid end)
-                            EasyBid.var.bidders = bidders
-
-                            if (EasyBid.var.gui.isVisible) then
-                                EasyBid:FillBidders()
-                            end
-
-                            return
-                        elseif prefix == "MonDKPLootDist" then
-                            local search = EasyBid:Table_Search(MonDKP_EasyBid_DKPTable, deserialized.player, "player")
-                            if search then
-                                local DKPTable = MonDKP_EasyBid_DKPTable[search[1][1]]
-                                DKPTable.dkp = DKPTable.dkp + deserialized.cost
-                                DKPTable.lifetime_spent = DKPTable.lifetime_spent + deserialized.cost
-                            else
-                                MonDKP_Profile_Create(deserialized.player, deserialized.cost, 0, deserialized.cost);
-                            end
-                        elseif prefix == "MonDKPDKPDist" then
-                            local players = {strsplit(",", strsub(deserialized.players, 1, -2))}
-                            local dkp = deserialized.dkp
-
-                            for i=1, #players do
-                                local search = EasyBid:Table_Search(MonDKP_EasyBid_DKPTable, players[i], "player")
-
-                                if search then
-                                    MonDKP_EasyBid_DKPTable[search[1][1]].dkp = MonDKP_EasyBid_DKPTable[search[1][1]].dkp + tonumber(dkp)
-                                    if tonumber(dkp) > 0 then
-                                        MonDKP_EasyBid_DKPTable[search[1][1]].lifetime_gained = MonDKP_EasyBid_DKPTable[search[1][1]].lifetime_gained + tonumber(dkp)
-                                    end
-                                else
-                                    MonDKP_Profile_Create(players[i], tonumber(dkp), tonumber(dkp));	-- creates temp profile for data and requests additional data from online officers (hidden until data received)
-                                end
-                            end
-                        elseif prefix == "MonDKPDecay" then
-                            local players = {strsplit(",", strsub(deserialized.players, 1, -2))}
-                            local dkp = {strsplit(",", deserialized.dkp)}
-
-                            for i=1, #players do
-                                local search = EasyBid:Table_Search(MonDKP_EasyBid_DKPTable, players[i], "player")
-
-                                if search then
-                                    MonDKP_EasyBid_DKPTable[search[1][1]].dkp = MonDKP_EasyBid_DKPTable[search[1][1]].dkp + tonumber(dkp[i])
-                                else
-                                    MonDKP_Profile_Create(players[i], tonumber(dkp[i]));	-- creates temp profile for data and requests additional data from online officers (hidden until data received)
-                                end
-                            end
-                        elseif prefix == "MonDKPDelLoot" then
-                            local search = EasyBid:Table_Search(MonDKP_Loot, deserialized.deletes, "index")
-
-                            if search then
-                                MonDKP_Loot[search[1][1]].deletedby = deserialized.index
-                            end
-
-                            local search_player = EasyBid:Table_Search(MonDKP_EasyBid_DKPTable, deserialized.player, "player")
-
-                            if search_player then
-                                MonDKP_EasyBid_DKPTable[search_player[1][1]].dkp = MonDKP_EasyBid_DKPTable[search_player[1][1]].dkp + deserialized.cost                  -- refund previous looter
-                                MonDKP_EasyBid_DKPTable[search_player[1][1]].lifetime_spent = MonDKP_EasyBid_DKPTable[search_player[1][1]].lifetime_spent + deserialized.cost       -- remove from lifetime_spent
-                            else
-                                MonDKP_Profile_Create(deserialized.player, deserialized.cost, 0, deserialized.cost);	-- creates temp profile for data and requests additional data from online officers (hidden until data received)
-                            end
-                        elseif prefix == "MonDKPDelSync" then
-                            local players = {strsplit(",", strsub(deserialized.players, 1, -2))}   -- cuts off last "," from string to avoid creating an empty value
-                            local dkp, mod;
-
-                            if strfind(deserialized.dkp, "%-%d*%.?%d+%%") then     -- determines if it's a mass decay
-                                dkp = {strsplit(",", deserialized.dkp)}
-                                mod = "perc";
-                            else
-                                dkp = deserialized.dkp
-                                mod = "whole"
-                            end
-
-                            for i=1, #players do
-                                if mod == "perc" then
-                                    local search2 = EasyBid:Table_Search(MonDKP_EasyBid_DKPTable, players[i], "player")
-
-                                    if search2 then
-                                        MonDKP_EasyBid_DKPTable[search2[1][1]].dkp = MonDKP_EasyBid_DKPTable[search2[1][1]].dkp + tonumber(dkp[i])
-                                    else
-                                        MonDKP_Profile_Create(players[i], tonumber(dkp[i]));	-- creates temp profile for data and requests additional data from online officers (hidden until data received)
-                                    end
-                                else
-                                    local search2 = EasyBid:Table_Search(MonDKP_EasyBid_DKPTable, players[i], "player")
-
-                                    if search2 then
-                                        MonDKP_EasyBid_DKPTable[search2[1][1]].dkp = MonDKP_EasyBid_DKPTable[search2[1][1]].dkp + tonumber(dkp)
-
-                                        if tonumber(dkp) < 0 then
-                                            MonDKP_EasyBid_DKPTable[search2[1][1]].lifetime_gained = MonDKP_EasyBid_DKPTable[search2[1][1]].lifetime_gained + tonumber(dkp)
-                                        end
-                                    else
-                                        local gained;
-                                        if tonumber(dkp) < 0 then gained = tonumber(dkp) else gained = 0 end
-                                        MonDKP_Profile_Create(players[i], tonumber(dkp), gained);	-- creates temp profile for data and requests additional data from online officers (hidden until data received)
-                                    end
-                                end
-                            end
-                        elseif prefix == "MonDKPMerge" then
-                            -- TODO mozna pridat MonDKP_DKPHistory, loot a archive
-                            for i=1, #MonDKP_EasyBid_DKPTable do
-                                if MonDKP_EasyBid_DKPTable[i].class == "NONE" then
-                                    local search = EasyBid:Table_Search(deserialized.Profiles, MonDKP_EasyBid_DKPTable[i].player, "player")
-
-                                    if search then
-                                        MonDKP_EasyBid_DKPTable[i].class = deserialized.Profiles[search[1][1]].class
-                                    end
-                                end
-                            end
-
-                            return
-                        end
-                    end
-                end
-            end
-        end
-    end
+    );
 end
 
 function EasyBid:SendData(prefix, data, target)
@@ -1516,34 +1201,5 @@ function EasyBid:SendData(prefix, data, target)
             EasyBid:SendCommMessage(prefix, packet, "SAY")
             return;
         end
-    end
-end
-
-function EasyBid:HSVtoRGB(h, s, v)
-    local i; -- int
-    local f, p, q, t; -- float
-    if( s == 0 ) then
-        return v, v, v;
-    end
-
-    h = h / 60; --			// sector 0 to 5
-    i = math.floor( h );
-    f = h - i;		--	// factorial part of h
-    p = v * ( 1 - s );
-    q = v * ( 1 - s * f );
-    t = v * ( 1 - s * ( 1 - f ) );
-
-    if (i == 0) then
-        return v, t, p;
-    elseif(i == 1) then
-        return q, v, p;
-    elseif(i == 2) then
-        return p, v, t;
-    elseif(i == 3) then
-        return p, q, v;
-    elseif(i == 4) then
-        return t, p, v;
-    elseif(i == 5) then
-        return v, p, q;
     end
 end

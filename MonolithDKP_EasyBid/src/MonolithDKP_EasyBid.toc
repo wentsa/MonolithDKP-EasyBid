@@ -6,11 +6,13 @@
 
 ## OptionalDeps: MonolithDKP
 
-## SavedVariables: MonDKP_EasyBid_DKPTable
+## SavedVariables: MonDKP_EasyBid_DKPTable,MonDKP_EasyBid_Loot,MonDKP_EasyBid_DKPHistory,MonDKP_EasyBid_Archive,TablesVersion
 ## SavedVariablesPerCharacter: EasyBidSettings
 
 ## Author: Tomas Chalupnik (tchalupnik.cz)
 
 embeds.xml
 
+Utils.lua
+Comm.lua
 EasyBid.lua
