@@ -1009,6 +1009,13 @@ function EasyBid:StartGUI()
         end
     end);
 
+    local btnSettings = AceGUI:Create("Icon")
+    btnSettings:SetImage("interface/icons/inv_misc_gear_01.blp")
+    btnSettings:SetImageSize(30, 30)
+    btnSettings:SetWidth(30)
+    btnSettings:SetHeight(30)
+    btnSettings:SetCallback("OnClick", function() AceConfigDialog:Open("EasyBid") end)
+
     local groupBidder = AceGUI:Create("SimpleGroup")
     groupBidder:SetRelativeWidth(1)
     groupBidder:SetLayout("Flow")
@@ -1039,6 +1046,13 @@ function EasyBid:StartGUI()
     groupSet:AddChild(btnSetHalf)
     groupSet:AddChild(btnSetMaximum)
 
+    local groupConfig = AceGUI:Create("SimpleGroup")
+    groupConfig:SetRelativeWidth(1)
+    groupConfig:SetLayout("Flow")
+
+    groupConfig:AddChild(btnSettings)
+    groupConfig:AddChild(checkMax)
+
     local group = AceGUI:Create("SimpleGroup")
     group:SetWidth(300)
     group:SetHeight(380)
@@ -1046,7 +1060,7 @@ function EasyBid:StartGUI()
 
     frame:AddChild(scrollcontainer)
     frame:AddChild(group)
-    frame:AddChild(checkMax)
+    frame:AddChild(groupConfig)
 
     group:AddChild(currentItem)
     group:AddChild(groupBidder)
@@ -1101,8 +1115,14 @@ function EasyBid:StartGUI()
     whisp:ClearAllPoints()
     whisp:SetPoint("TOPLEFT", groupSet.frame, "BOTTOMLEFT", 0, -15);
 
+    groupConfig:ClearAllPoints()
+    groupConfig:SetPoint("BOTTOMLEFT", frame.frame, "BOTTOMLEFT", 20, 50)
+
+    btnSettings:ClearAllPoints();
+    btnSettings:SetPoint("BOTTOMLEFT", groupConfig.frame, "BOTTOMLEFT")
+
     checkMax:ClearAllPoints()
-    checkMax:SetPoint("BOTTOMLEFT", frame.frame, "BOTTOMLEFT", 20, 40)
+    checkMax:SetPoint("BOTTOMLEFT", btnSettings.frame, "BOTTOMRIGHT", 20, 0)
 
 
     if (shouldShow) then
