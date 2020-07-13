@@ -171,15 +171,11 @@ EasyBid.Options = {
             type = "group",
             name = "Armor",
             desc = "Set armor types for which the bidding window will be opened automatically",
-            get = function(info) return not EasyBidSettings.armor[info.arg] end,
-            set = function(info, value) EasyBidSettings.armor[info.arg] = not value end,
         },
         weapons = {
             type = "group",
             name = "Weapons",
             desc = "Set weapon types for which the bidding window will be opened automatically",
-            get = function(info) return not EasyBidSettings.weapons[info.arg] end,
-            set = function(info, value) EasyBidSettings.weapons[info.arg] = not value end,
         },
     }
 }
@@ -217,21 +213,59 @@ function EasyBid:OnInitialize()
     -- Fill options table armor
     local armor = {}
     for index, value in pairs(armorTypes) do
-        armor[tostring(index)] = { type = "toggle", name = value, arg = index }
+        armor[tostring(index)] = {
+            type = "toggle",
+            name = value,
+            arg = index,
+            get = function() return not EasyBidSettings.armor[index] end,
+            set = function(_, newValue) EasyBidSettings.armor[index] = not newValue end,
+        }
         if (not EasyBidSettings.initialized) then
             EasyBidSettings.armor[index] = not EasyBid:CanEquip(cls, armorItemType, index)
         end
     end
+
+    armor["reset"] = {
+        type = "execute",
+        name = "Reset to class defaults",
+        order = 0,
+        width = "full",
+        func = function()
+            for index, value in pairs(armorTypes) do
+                EasyBidSettings.armor[index] = not EasyBid:CanEquip(cls, armorItemType, index)
+            end
+        end
+    }
+
     EasyBid.Options.args.armor.args = armor;
 
     -- Fill options weapon
     local weapons = {}
     for index, value in pairs(weaponTypes) do
-        weapons[tostring(index)] = { type = "toggle", name = value, arg = index }
+        weapons[tostring(index)] = {
+            type = "toggle",
+            name = value,
+            arg = index,
+            get = function() return not EasyBidSettings.weapons[index] end,
+            set = function(_, newValue) EasyBidSettings.weapons[index] = not newValue end,
+        }
         if (not EasyBidSettings.initialized) then
             EasyBidSettings.weapons[index] = not EasyBid:CanEquip(cls, weaponItemType, index)
         end
     end
+
+    weapons["reset"] = {
+        type = "execute",
+        name = "Reset to class defaults",
+        order = 0,
+        width = "full",
+        func = function()
+            for index, value in pairs(weaponTypes) do
+                EasyBidSettings.weapons[index] = not EasyBid:CanEquip(cls, weaponItemType, index)
+            end
+        end
+    }
+
     EasyBid.Options.args.weapons.args = weapons;
 
     AceConfig:RegisterOptionsTable("EasyBid", EasyBid.Options)
