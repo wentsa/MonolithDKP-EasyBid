@@ -861,7 +861,7 @@ function EasyBid:StartGUI()
             self.hooks[f].OnHide(f)
         end
     )
-    frame.frame:SetFrameStrata("DIALOG")
+    frame.frame:SetFrameStrata("FULLSCREEN_DIALOG")
 
     local scrollcontainer = AceGUI:Create("InlineGroup")
     scrollcontainer:SetTitle("History")
@@ -1128,6 +1128,7 @@ function EasyBid:StartGUI()
     if (shouldShow) then
         EasyBid.var.gui.frame:Show();
         EasyBid.var.gui.isVisible = true
+        FlashClientIcon()
     else
         frame:Hide()
     end
