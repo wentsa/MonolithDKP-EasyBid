@@ -20,7 +20,6 @@ EasyBid.var = {
         currentItem = nil,
         groupBidder = nil,
         scrollContainer = nil,
-        whisp = nil,
         btnBid = nil,
         scroll = nil,
         btnSetHalf = nil,
@@ -690,8 +689,8 @@ function EasyBid:OnWhisperMessage(self, message, author)
         )
     ) then
         EasyBid.var.lastOfficerWhisper = message;
-        if(EasyBid.var.gui.whisp ~= nil) then
-            EasyBid.var.gui.whisp:SetText(EasyBid.var.lastOfficerWhisper)
+        if(EasyBid.var.gui.frame ~= nil) then
+            EasyBid.var.gui.frame:SetStatusText(EasyBid.var.lastOfficerWhisper)
         end
     end
 end
@@ -863,6 +862,12 @@ function EasyBid:StartGUI()
     )
     frame.frame:SetFrameStrata("FULLSCREEN_DIALOG")
 
+    if(EasyBid.var.lastOfficerWhisper ~= nil) then
+        frame:SetStatusText(EasyBid.var.lastOfficerWhisper)
+    else
+        frame:SetStatusText("")
+    end
+
     local scrollcontainer = AceGUI:Create("InlineGroup")
     scrollcontainer:SetTitle("History")
     scrollcontainer:SetWidth(240)
@@ -975,18 +980,6 @@ function EasyBid:StartGUI()
     btnSetMaximum:SetWidth(100)
     btnSetMaximum:SetHeight(30)
 
-    local whisp = AceGUI:Create("Label");
-    whisp:SetRelativeWidth(1)
-    Path, Size, Flags = whisp.label:GetFont()
-    whisp.label:SetFont(Path, 13, Flags);
-    whisp:SetColor(0.4, 0.96, 0.26)
-
-    if(EasyBid.var.lastOfficerWhisper ~= nil) then
-        whisp:SetText(EasyBid.var.lastOfficerWhisper)
-    else
-        whisp:SetText("")
-    end
-
     local checkMax = AceGUI:Create("CheckBox")
     checkMax:SetValue(EasyBidSettings.useMyMax)
     checkMax:SetLabel("Use my MAX")
@@ -1069,7 +1062,6 @@ function EasyBid:StartGUI()
     group:AddChild(groupModify)
     group:AddChild(minBidSlider)
     group:AddChild(groupSet)
-    group:AddChild(whisp)
 
     EasyBid.var.gui.frame = frame
     EasyBid.var.gui.editBox = editbox
@@ -1080,7 +1072,6 @@ function EasyBid:StartGUI()
     EasyBid.var.gui.btnSetHalf = btnSetHalf
     EasyBid.var.gui.btnSetMaximum = btnSetMaximum
     EasyBid.var.gui.scrollContainer = scrollcontainer;
-    EasyBid.var.gui.whisp = whisp;
     EasyBid.var.gui.btnBid = btnBid;
     EasyBid.var.gui.isBidMax = isBidMax;
 
@@ -1111,9 +1102,6 @@ function EasyBid:StartGUI()
 
     groupModify:ClearAllPoints()
     groupModify:SetPoint("TOPLEFT", groupBid.frame, "BOTTOMLEFT", 0, -5);
-
-    whisp:ClearAllPoints()
-    whisp:SetPoint("TOPLEFT", groupSet.frame, "BOTTOMLEFT", 0, -15);
 
     groupConfig:ClearAllPoints()
     groupConfig:SetPoint("BOTTOMLEFT", frame.frame, "BOTTOMLEFT", 20, 50)
@@ -1147,7 +1135,6 @@ function EasyBid:StopGUI(widget)
             currentItem = nil,
             groupBidder = nil,
             scrollContainer = nil,
-            whisp = nil,
             btnBid = nil,
             scroll = nil,
             btnSetHalf = nil,
